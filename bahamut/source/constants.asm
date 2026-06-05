@@ -1,3 +1,15 @@
+// Active KO menu layout profile:
+//   KO_LAYOUT_NEAR_TUNED is the official baseline.
+//
+// The JP_BASE / JP_TUNED experiment was abandoned after visual regression.
+// Keep the disabled constants only as compile-time guard rails for preserved
+// experimental code paths; do not reactivate without an explicit new request.
+constant KO_LAYOUT_NEAR_TUNED = 1
+constant KO_LAYOUT_JP_BASE    = 0
+constant KO_LAYOUT_JP_TUNED   = 0
+
+constant KO_USER_KO_TUNING    = KO_LAYOUT_NEAR_TUNED
+
 namespace command {
   constant base  = $f0  //$f0-$ff
   constant break = $fe  //$fe-$ff

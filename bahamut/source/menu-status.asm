@@ -44,30 +44,35 @@ namespace status {
   seek($ee9762); string.skip()  //"Armor"  text (not printed for space reasons)
   seek($ee954d); string.skip()  //"LV" text (player)
   seek($ee95ce); string.skip()  //"LV" text (dragon)
-  seek($ee955d); lda #$0090  //"LV" position (player)
-  seek($ee95de); lda #$0090  //"LV" position (dragon)
-  seek($ee95f6); lda #$0100  //"Class" position (dragon)
-  seek($ee9658); lda #$0200  //"HP" position
-  seek($ee969b); lda #$030a  //"Experience"# position
-  seek($ee96e6); lda #$038a  //"Next Level"# position
-  seek($ee98cc); lda #$004a  //"Attack"#  position (player)
-  seek($ee98b7); lda #$00ca  //"Defense"# position
-  seek($ee98a2); lda #$014a  //"Speed"#   position
-  seek($ee988d); lda #$01ca  //"Magic"#   position
-  seek($ee97b9); lda #$004a  //"Attack"#  position (dragon)
-  seek($ee97f3); lda #$00ca  //"Defense"# position
-  seek($ee982d); lda #$014a  //"Speed"#   position
-  seek($ee9867); lda #$01ca  //"Magic"#   position
-  seek($ee9744); lda #$0700  //"Weapon" position
-  seek($ee9774); lda #$0780  //"Armor"  position
-  seek($ee9c30); lda #$009c  //"Technique Cost" position
-  seek($ee93d2); lda #$0016  //X cursor position (menu)
-  seek($ee93e4); adc #$0001  //Y cursor position
-  seek($ee93b4); lda #$0016  //X cursor position (list)
-  seek($ee93c6); adc #$0049  //Y cursor position
 
-  //the technique menu levels would overlap sprites in its previous position ($60)
-  seek($ee6780); db $78  //X player sprite position
+  // Near EN layout only: status-screen text/cursor/sprite coordinates.
+  // KO JP layout disabled: preserve the Japanese ROM's original 8x8-grid coordinates.
+  if KO_LAYOUT_NEAR_TUNED {
+    seek($ee955d); lda #$0090  //"LV" position (player)
+    seek($ee95de); lda #$0090  //"LV" position (dragon)
+    seek($ee95f6); lda #$0100  //"Class" position (dragon)
+    seek($ee9658); lda #$0200  //"HP" position
+    seek($ee969b); lda #$030a  //"Experience"# position
+    seek($ee96e6); lda #$038a  //"Next Level"# position
+    seek($ee98cc); lda #$004a  //"Attack"#  position (player)
+    seek($ee98b7); lda #$00ca  //"Defense"# position
+    seek($ee98a2); lda #$014a  //"Speed"#   position
+    seek($ee988d); lda #$01ca  //"Magic"#   position
+    seek($ee97b9); lda #$004a  //"Attack"#  position (dragon)
+    seek($ee97f3); lda #$00ca  //"Defense"# position
+    seek($ee982d); lda #$014a  //"Speed"#   position
+    seek($ee9867); lda #$01ca  //"Magic"#   position
+    seek($ee9744); lda #$0700  //"Weapon" position
+    seek($ee9774); lda #$0780  //"Armor"  position
+    seek($ee9c30); lda #$009c  //"Technique Cost" position
+    seek($ee93d2); lda #$0016  //X cursor position (menu)
+    seek($ee93e4); adc #$0001  //Y cursor position
+    seek($ee93b4); lda #$0016  //X cursor position (list)
+    seek($ee93c6); adc #$0049  //Y cursor position
+
+    //the technique menu levels would overlap sprites in its previous position ($60)
+    seek($ee6780); db $78  //X player sprite position
+  }
   dequeue pc
 
   allocator.bpp4()
@@ -371,7 +376,7 @@ namespace status {
     enter
     and #$00ff; mul(3); tay
     allocator.index(techniqueMenuLevel)
-    lda #$0003; write.bpp2(lists.levels.bpp2)
+    lda #$0003; write.bpp2(lists.levelsMagic.bpp2)
     leave; rtl
   }
 
@@ -392,7 +397,7 @@ namespace status {
       enter
       and #$00ff; mul(3); tay
       allocator.index(techniqueItemLevel)
-      lda #$0003; write.bpp2(lists.levels.bpp2)
+      lda #$0003; write.bpp2(lists.levelsMagic.bpp2)
       leave; rtl
     }
 

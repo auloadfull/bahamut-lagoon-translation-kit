@@ -18,22 +18,31 @@ namespace party {
   seek($ee714f); jsl mp.setNone
   seek($ee7f5c); string.skip()  //"LV" text
   seek($ee7fd0); string.skip()  //"HP" text
-  seek($ee7f31); lda #$0046     //name position
-  seek($ee7f42); lda #$0054     //"LV" clear position
-  seek($ee7f6c); lda #$0054     //"LV" text position
-  seek($ee7f8a); lda #$00c6     //class position
-  seek($ee7fe2); lda #$0146     //"HP" position
-  seek($ee8000); lda #$014e     //"MP"/"SP" position
-  seek($ee7df8); lda #$0016     //X cursor offset (command menu)
-  seek($ee7df1); adc #$003d     //Y cursor offset (command menu)
-  seek($ee7a7e); lda #$0096     //X cursor offset (player menu)
-  seek($ee7a78); adc #$0021     //Y cursor offset (player menu)
+
+  // Near EN layout only: widened proportional 4bpp summary positions.
+  // KO JP layout disabled: preserve the Japanese ROM's original 8x8-grid coordinates.
+  if KO_LAYOUT_NEAR_TUNED {
+    seek($ee7f31); lda #$0040     //name position
+    seek($ee7f42); lda #$004e     //"LV" clear position
+    seek($ee7f6c); lda #$004e     //"LV" text position
+    seek($ee7f8a); lda #$00c0     //class position
+    seek($ee7fe2); lda #$0140     //"HP" position
+    seek($ee8000); lda #$014c     //"MP"/"SP" position
+    seek($ee7df8); lda #$0016     //X cursor offset (command menu)
+    seek($ee7df1); adc #$003d     //Y cursor offset (command menu)
+    seek($ee7a7e); lda #$007e     //X cursor offset (player menu)
+    seek($ee7a78); adc #$0021     //Y cursor offset (player menu)
+  }
 
   //sprite X positions
-  seek($ee671c); db $7c  //player 1
-  seek($ee6720); db $7c  //player 2
-  seek($ee6724); db $7c  //player 3
-  seek($ee6728); db $7c  //player 4
+  // Near EN layout only: sprite X positions shifted for the widened party summary.
+  // KO JP layout disabled: keep original player sprite X positions.
+  if KO_LAYOUT_NEAR_TUNED {
+    seek($ee671c); db $64  //player 1
+    seek($ee6720); db $64  //player 2
+    seek($ee6724); db $64  //player 3
+    seek($ee6728); db $64  //player 4
+  }
 
   //campaign
   seek($ee8339); string.hook(formation)
@@ -58,40 +67,95 @@ namespace party {
   //"Chapter"#
   seek($ee8287); string.skip()      //label
   seek($ee82a4); jsl chapterNumber  //value
-  seek($ee829a); lda #$06c6         //position
+  // Near EN layout only: campaign info value/label positions.
+  // KO JP layout disabled: preserve the Japanese 8x8-grid positions.
+  if KO_LAYOUT_NEAR_TUNED {
+    seek($ee829a); lda #$06c2       //position
+  }
 
   //"Side Quest"#
   seek($ee8262); string.skip()        //label
   seek($ee8281); jsl sideQuestNumber  //value
-  seek($ee8273); lda #$06c6           //position
+  if KO_LAYOUT_NEAR_TUNED {
+    seek($ee8273); lda #$06c2         //position
+  }
 
   //"Turn"#
   seek($ee81ff); string.skip()  //label
   seek($ee82b9); jsl turn       //value
-  seek($ee82af); lda #$0746     //position
+  if KO_LAYOUT_NEAR_TUNED {
+    seek($ee82af); lda #$0744   //position
+  }
 
   //"Piro"#
   seek($ee821a); string.skip()  //label
   seek($ee82d2); jsl piro       //value
-  seek($ee82bd); lda #$07c6     //position
+  if KO_LAYOUT_NEAR_TUNED {
+    seek($ee82bd); lda #$07c6   //position
+  }
 
   //"Time"
   seek($ee823b); string.skip()        //time field separators
   seek($ee82dc); jsl time; jmp $8312  //value
-  seek($ee82d6); lda #$0846           //position
+  if KO_LAYOUT_NEAR_TUNED {
+    seek($ee82d6); lda #$0842         //position
+  }
 
   dequeue pc
 
   allocator.bpp4()
   allocator.create(7, 8,name)
-  allocator.create(3, 8,level)
+  allocator.create(4, 8,level)
   allocator.create(8, 8,class)
-  allocator.create(5, 8,hp)
-  allocator.create(4, 8,mp)
+  allocator.create(8, 8,hp)
+  allocator.create(6, 8,mp)
   allocator.bpp2()
   allocator.create(8,11,menu)
   allocator.create(5, 2,party)
   allocator.create(8, 2,dragon)
+  allocator.create(4, 1,turnLabel)
+  allocator.create(4, 1,piroLabel)
+  allocator.create(7, 1,chapterLabel)
+  allocator.create(2, 1,chapterValue)
+
+  macro appendGridInteger2() {
+    // USER_KO_TUNING: pixel-level numeric padding for the Near-tuned KO layout.
+    if KO_USER_KO_TUNING {
+      cmp.w #10; bcs render{#}
+      append.alignSkip(2)
+    }
+  render{#}:
+    append.integer_2()
+  }
+
+  macro appendGridInteger3() {
+    // USER_KO_TUNING: pixel-level numeric padding for the Near-tuned KO layout.
+    if KO_USER_KO_TUNING {
+      cmp.w #100; bcs render{#}
+      cmp.w  #10; bcs skip2{#}
+      append.alignSkip(4); bra render{#}
+    skip2{#}:
+      append.alignSkip(2)
+    }
+  render{#}:
+    append.integer_3()
+  }
+
+  macro appendGridInteger4() {
+    // USER_KO_TUNING: pixel-level numeric padding for the Near-tuned KO layout.
+    if KO_USER_KO_TUNING {
+      cmp.w #1000; bcs render{#}
+      cmp.w  #100; bcs skip2{#}
+      cmp.w   #10; bcs skip4{#}
+      append.alignSkip(6); bra render{#}
+    skip4{#}:
+      append.alignSkip(4); bra render{#}
+    skip2{#}:
+      append.alignSkip(2)
+    }
+  render{#}:
+    append.integer_4()
+  }
 
   inline static(define name) {
     function {name} {
@@ -151,7 +215,7 @@ namespace party {
   //A => party
   function party {
     enter
-    tilemap.setColorGreen()
+    tilemap.setColorWhite()
     and #$0007; mul(5); tay
     lda #$0005; allocator.index(party); write.bpp2(lists.parties.bpp2)
     tilemap.setColorWhite()
@@ -169,6 +233,19 @@ namespace party {
   //A => chapter#
   function chapterNumber {
     enter
+    tilemap.setColorGreen()
+    and #$001f; pha
+    ldy.w #strings.bpp2.chapterLabel
+    lda #$0007; allocator.index(chapterLabel); write.bpp2(lists.strings.bpp2)
+    pla; mul(2); tay
+    lda #$0002; allocator.index(chapterValue); write.bpp2(lists.quantities.bpp2)
+    tilemap.setColorWhite()
+    leave; rtl
+  }
+
+  //A => chapter#
+  function chapterName {
+    enter
     and #$001f; mul(8); tay
     lda #$0008; ldx #$0010
     write.bpp2(lists.chapters.bpp2)
@@ -178,19 +255,19 @@ namespace party {
   //A => side quest#
   function sideQuestNumber {
     php; rep #$30; pha
-    add #$001b; jsl chapterNumber
+    add #$001b; jsl chapterName
     pla; plp; rtl
   }
 
   //A => turn#
   function turn {
     enter; ldx #$0000
-    append.literal("Turn")
-    append.alignLeft()
-    append.alignSkip(23)
-    append.integer5()
-    lda #$0006; render.small.bpp2()
+    append.integer03()
+    lda #$0003; render.small.bpp2()
     ldx #$0018; jsl write.bpp2
+    tilemap.incrementAddress(2)
+    ldy.w #strings.bpp2.turnLabel
+    lda #$0004; allocator.index(turnLabel); write.bpp2(lists.strings.bpp2)
     leave; rtl
   }
 
@@ -199,12 +276,12 @@ namespace party {
     enter; ldx #$0000
     lda $7e8018; and #$00ff; tay
     lda $7e8016
-    append.literal("Piro")
-    append.alignLeft()
-    append.alignSkip(23)
     append.integer10()
-    lda #$0009; render.small.bpp2()
+    lda #$0006; render.small.bpp2()
+    lda render.tiles
     ldx #$001e; jsl write.bpp2
+    ldy.w #strings.bpp2.piro
+    lda #$0004; allocator.index(piroLabel); write.bpp2(lists.strings.bpp2)
     leave; rtl
   }
 
@@ -213,13 +290,21 @@ namespace party {
   //$7e2bd2 => second
   function time {
     enter; ldx #$0000
-    append.literal("Time")
-    append.alignLeft()
-    append.alignSkip(23)
     lda $7e3bd0; and #$00ff
-    cmp.w #100; bcs +
-    append.integer02(); bra ++; +
-    append.integer_3(); +
+    cmp.w #100; bcs digits_3
+    append.integer02()
+    append.literal(":")
+    lda $7e3bd1; and #$00ff
+    append.integer02()
+    append.literal(":")
+    lda $7e3bd2; and #$00ff
+    append.integer02()
+    lda #$0008; render.small.bpp2()
+    ldx #$0027; jsl write.bpp2
+    leave; rtl
+
+  digits_3:
+    append.integer_3()
     append.literal(":")
     lda $7e3bd1; and #$00ff
     append.integer02()
@@ -248,9 +333,17 @@ namespace party {
 
   //A => player level
   function playerLevel {
+    variable(2, value)
+
     enter
-    and #$00ff; mul(3); tay
-    lda #$0003; allocator.index(level); write.bpp4(lists.levels.bpp4)
+    and #$00ff; sta value
+    tilemap.setColorGreen()
+    ldx #$0000; append.literal("LV")
+    lda #$0002; render.small.bpp4()
+    lda #$0002; allocator.index(level); write.bpp4()
+    tilemap.setColorWhite()
+    lda value; and #$00ff; min.w(100); mul(3); inc; tay
+    lda #$0002; allocator.index(level); inx #2; write.bpp4(lists.levelsMagic.bpp4)
     leave; rtl
   }
 
@@ -271,11 +364,22 @@ namespace party {
   }
 
   namespace hp {
+    variable(2, value)
+
     function setValue {
       enter
-      ldx #$0000; append.hpValue(); append.alignSkip(2)
+      sta value
+      tilemap.setColorGreen()
+      ldx #$0000; append.literal("HP:")
+      lda #$0003; render.small.bpp4()
+      lda #$0003; allocator.index(hp); write.bpp4()
+      tilemap.setColorWhite()
+      ldx #$0000; lda value
+      cmp.w #10000; bcc +; append.literal("????"); bra ++; +
+      appendGridInteger4(); +
+      append.literal(" ")
       lda #$0005; render.small.bpp4()
-      allocator.index(hp); write.bpp4()
+      lda #$0005; allocator.index(hp); inx #3; write.bpp4()
       leave; rtl
     }
   }
@@ -291,22 +395,43 @@ namespace party {
     function setValue {
       enter
       sta value
+      tilemap.setColorGreen()
       ldx #$0000
       lda type
-      cmp #$0000; bne +; lda value; append.mpValue(); bra render; +
-      cmp #$0001; bne +; lda value; append.spValue(); bra render; +
+      cmp #$0000; bne +; append.literal("MP:"); bra label; +
+      cmp #$0001; bne +; append.literal("SP:"); bra label; +
       leave; rtl
+
+    label:
+      lda #$0003; render.small.bpp4()
+      lda #$0003; allocator.index(mp); write.bpp4()
+      tilemap.setColorWhite()
+      ldx #$0000; lda value
+      cmp #$ffff; bne +; append.literal("---"); bra render; +
+      cmp #$03e8; bcc +; append.literal("???"); bra render; +
+      appendGridInteger3()
+
     render:
-      lda #$0004; render.small.bpp4()
-      allocator.index(mp); write.bpp4()
+      lda #$0003; render.small.bpp4()
+      lda #$0003; allocator.index(mp); inx #3; write.bpp4()
       leave; rtl
     }
 
     function setNone {
-      php; rep #$30
-      tilemap.incrementAddress(4)
-      lda #$ffff; jsl setValue
-      plp; rtl
+      enter
+      // USER_KO_TUNING: Near-tuned KO layout moved the unavailable MP/SP dash
+      // two tiles farther right.  JP_BASE keeps the translation-kit baseline
+      // hook offset instead of applying this extra shift.
+      if KO_USER_KO_TUNING {
+        tilemap.incrementAddress(6)
+      } else {
+        tilemap.incrementAddress(4)
+      }
+      tilemap.setColorWhite()
+      ldx #$0000; append.literal("---")
+      lda #$0003; render.small.bpp4()
+      lda #$0003; allocator.index(mp); inx #3; write.bpp4()
+      leave; rtl
     }
   }
 }
