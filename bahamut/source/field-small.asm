@@ -646,19 +646,41 @@ namespace class {
 
   //A => dragon class
   function dragon {
+    variable(2, classIndex)
+    variable(2, classTiles)
+    variable(2, parenIndex)
+
     enter; ldb #$31; stz.w cursor
-    and #$00ff; mul(8); tay
+    and #$00ff; pha; mul(8); tay
     lda #$0008; index.bpp2(); write.bpp2(lists.dragons.bpp2)
-    txa; sep #$30; ldx.w cursor; pha; lda.b #' '
-    sta.w output,x; inx; pla
-    sta.w output,x; inx; inc
-    sta.w output,x; inx; inc
-    sta.w output,x; inx; inc
-    sta.w output,x; inx; inc
-    sta.w output,x; inx; inc
-    sta.w output,x; inx; inc
-    sta.w output,x; inx; inc
-    sta.w output,x; inx; lda.b #command.terminal
+    txa; sta classIndex
+
+    ldx #$0000; append.literal("(")
+    lda #$0001; render.small.bpp2()
+    index.int3(); stx parenIndex
+    ldx parenIndex; lda #$0001; write.bpp2()
+
+    ldx #$0000; append.literal(")")
+    lda #$0001; render.small.bpp2()
+    ldx parenIndex; inx; lda #$0001; write.bpp2()
+
+    pla; tax
+    lda lists.dragons.widths,x; and #$00ff
+    bne +; inc; +
+    sta classTiles
+
+    sep #$30; ldx.w cursor; lda.b #' '
+    sta.w output,x; inx
+    lda.b #command.tileBank2
+    sta.w output,x; inx
+    lda parenIndex
+    sta.w output,x; inx
+    lda classIndex; ldy.w classTiles
+  -;sta.w output,x; inx; inc
+    dey; bne -
+    lda parenIndex; inc
+    sta.w output,x; inx
+    lda.b #command.terminal
     sta.w output,x
     leave; rtl
   }
@@ -720,7 +742,7 @@ namespace hp {
 
     enter; ldb #$31
     ldx $18; lda $7e0005,x; ldx #$0000
-    pha; lda.w name.type; and #$00ff; cmp.w #name.type.enemy; beq +
+    pha; lda.w name.type; and #$00ff; cmp.w #name.type.player; bne +
     pla; append.alignSkip(2); bra ++
   +;pla
   +
@@ -837,10 +859,10 @@ namespace techniqueSmall {
   enqueue pc
   seek($c05315); jsl setCursorAttributes; nop
   seek($c0d6ab); jsl main; jmp $d6b6
-  seek($c0d648); ldy #$c444  //move the start of the line one tile to the left
+  seek($c0d648); ldy #$c446  //move the start of the line one tile to the right
   seek($c0d781); ldx #$062c  //move the start of MP/SP numbers one tile to the right
-  seek($c0ea96); lda #$ff    //move the left-side cursor five pixels to the left
-  seek($c0eaa1); lda #$77    //move the right-side cursor five pixels to the left
+  seek($c0ea96); lda #$07    //move the left-side cursor one tile to the right
+  seek($c0eaa1); lda #$7f    //move the right-side cursor one tile to the right
   dequeue pc
 
   //originally, the sprite cursor could only be positioned from X=0-255.
@@ -869,57 +891,62 @@ namespace techniqueSmall {
   //c0d6b3  jsr $d774  ;print the cost  (if not $00)
   //------
   function main {
-    variable(2, palette)
+    variable(2, tileIndex)
+    variable(2, nameTiles)
     constant name  = $1a
     constant level = $19
     constant cost  = $1b
 
     enter; ldb #$31; stz.w cursor
 
-    //determine which palette to use for MP/SP text
-    lda.w #command.paletteIvory; sta palette    //default to ivory palette
-    ldx $1e; lda $7e0011,x; and #$00ff          //check if the text will be grayed out
-    cmp #$00fe; bne +                           //(eg if there is insufficient MP/SP)
-    lda.w #command.paletteGray; sta palette; +  //if so, use gray palette instead
-
   writeName:  //write the technique name
-    lda.b name; and #$00ff; mul(8); tay
-    lda #$0008; index.bpp2(); write.bpp2(lists.techniques.bpp2); txa
-    sep #$30; ldx.w cursor
-    sta.w output,x; inx; inc
-    sta.w output,x; inx; inc
-    sta.w output,x; inx; inc
-    sta.w output,x; inx; inc
-    sta.w output,x; inx; inc
-    sta.w output,x; inx; inc
-    sta.w output,x; inx; inc
-    sta.w output,x; inx; stx.w cursor; rep #$30
+    lda.b name; and #$00ff; pha; mul(8); tay
+    lda #$0008; index.bpp2(); write.bpp2(lists.techniques.bpp2); txa; sta tileIndex
+    pla; tax
+    lda lists.techniques.widths,x; and #$00ff
+    bne +; inc; +
+    sta nameTiles
+    sep #$30; ldx.w cursor; ldy.w nameTiles; lda tileIndex
+  -;sta.w output,x; inx; inc
+    dey; bne -
+    stx.w cursor; rep #$30
 
   writeLevel:  //write the technique level, unless it is $ff
-    lda.b level; and #$00ff; cmp #$00ff; jeq writeCost
-    mul(3); tay
-    phx; lda #$0003; index.int3(); write.bpp2(lists.levels.bpp2); txa; plx
-    sep #$30; ldx.w cursor
+    lda.b level; and #$00ff; cmp #$00ff; jeq alignCost
+    ldx #$0000
+    cmp.w #10; bcc +; append.integer_2(); bra ++; +
+    append.integer1(); +
+    lda #$0002; render.small.bpp2()
+    index.int3(); stx tileIndex
+    ldx tileIndex; inx; lda #$0002; write.bpp2()
+    ldx tileIndex; ldy.w #glyph.lv; lda #$0001; write.bpp2(font.field)
+    ldx tileIndex; txa; sep #$30; ldx.w cursor; pha; lda.b #command.tileBank2
+    sta.w output,x; inx; pla
     sta.w output,x; inx; inc
     sta.w output,x; inx; inc
     sta.w output,x; inx; stx.w cursor; rep #$30
+
+  alignCost:
+    lda nameTiles; cmp #$0008; bcs writeCost
+    lda #$0008; sub nameTiles; tay
+    sep #$30; ldx.w cursor; lda.b #' '
+  -;sta.w output,x; inx
+    dey; bne -
+    stx.w cursor; rep #$30
 
   writeCost:  //write the technique cost, unless it is $00
     lda.b cost; and #$00ff; jeq writeTerminal
-    mul(3); tay
-    phx; lda #$0003; index.int4()
-
-    //write either "## MP" or "## SP", depending on the technique
-    pha; phx
-    lda.b name; and #$00ff; cmp #$004c; bcc sp
-    mp:; plx; pla; write.bpp2(lists.costsMP.bpp2); bra +
-    sp:; plx; pla; write.bpp2(lists.costsSP.bpp2); +
-    txa; plx
-
-    sep #$30; ldx.w cursor; pha; lda palette
-    sta.w output,x; inx; lda.b #command.tileBank1
+    min.w(100)
+    ldx #$0000
+    cmp.w #100; bcc +; append.literal("^^"); bra renderCost; +
+    append.alignRight(); append.integer_2()
+  renderCost:
+    lda #$0002; render.small.bpp2()
+    index.int3(); stx tileIndex
+    ldx tileIndex; lda #$0002; write.bpp2()
+    ldx tileIndex; txa; sep #$30; ldx.w cursor; pha; lda.b #command.paletteWhite
+    sta.w output,x; inx; lda.b #command.tileBank2
     sta.w output,x; inx; pla
-    sta.w output,x; inx; inc
     sta.w output,x; inx; inc
     sta.w output,x; inx; stx.w cursor; rep #$30
 

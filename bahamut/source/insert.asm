@@ -238,6 +238,7 @@ namespace dragons {
   insert("lists/dragons", bpp2)
   insert("lists/dragons", bpp4)
   insert("lists/dragons", text)
+  insert("lists/dragons", widths)
 }
 
 namespace enemies {
