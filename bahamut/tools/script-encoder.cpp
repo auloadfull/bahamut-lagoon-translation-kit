@@ -133,7 +133,6 @@ auto Encoder::encodeScript(Script& script, vector<string>& english) -> void {
           u32 glyph = read.argument.hex();
           if(script.mode == Script::Mode::Field) {
             if(auto code = TextEncoder::koFieldCode(glyph)) {
-              context.script.append(Command::Reserved1);
               context.script.append(*code);
             } else {
               error("missing field KO glyph: ", read.argument, "\n", text, "\n");

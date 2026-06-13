@@ -134,6 +134,7 @@ namespace renderLargeText {
     sta index
     loop: {
       jsl read
+      cmp.w #command.reserved1; bne +; jsl koGlyph;  bra loop; +
       cmp.w #command.name;     bne +; jsl name;     bra loop; +
       cmp.w #command.redirect; bne +; jsl redirect; bra loop; +
       sta text,x; inx
@@ -158,6 +159,12 @@ namespace renderLargeText {
       lda text-2,x; and #$00ff; cmp.w #'s'; beq +
       append.byte(text, 's')
     +;rtl
+    }
+
+    function koGlyph {
+      sta text,x; inx
+      jsl read; sta text,x; inx
+      rtl
     }
 
     function redirect {
@@ -234,15 +241,23 @@ namespace renderLargeText {
     jsl read
     sta.b characterEncoded
     cpx #$0000;                 bne +; jsl initialize; +
+    jsl fieldKoIndex
+    cmp.b #$ff;                 beq +
+    jsl renderKoGlyphLoaded
+    jsl increment
+    lda.b characterLimit; cmp #$01; jne render
+    jml $c009bf
+  +;lda.b characterEncoded
     cmp.b #command.base;        jcc character
     cmp.b #command.styleNormal; bne +; lda #$00; sta style; jsl increment; bra render; +
     cmp.b #command.styleItalic; bne +; lda #$60; sta style; jsl increment; bra render; +
     cmp.b #command.colorNormal; bne +; lda #$00; sta color; jsl increment; bra render; +
     cmp.b #command.colorYellow; bne +; lda #$01; sta color; jsl increment; bra render; +
     cmp.b #command.alignLeft;   bne +; jsl align.left;                     bra render; +
-    cmp.b #command.alignCenter; bne +; jsl align.center;                   bra render; +
-    cmp.b #command.alignRight;  bne +; jsl align.right;                    bra render; +
-    cmp.b #command.alignSkip;   bne +; jsl align.skip;                     bra render; +
+    cmp.b #command.alignCenter; bne +; jsl align.center;                   jmp render; +
+    cmp.b #command.alignRight;  bne +; jsl align.right;                    jmp render; +
+    cmp.b #command.alignSkip;   bne +; jsl align.skip;                     jmp render; +
+    cmp.b #command.reserved1;   bne +; jsl renderKoGlyph;                  lda.b characterLimit; cmp #$01; jne render; jml $c009bf; +
     cmp.b #command.lineFeed;    bcc +; jml $c0099b; +
     cmp.b #command.pause;       bne +; jsl increment; jsl increment;       jmp render; +
   unsupportedCommand:
@@ -379,6 +394,60 @@ namespace renderLargeText {
 
     normal:; render(largeFont.normal)
     yellow:; render(largeFont.yellow)
+  }
+
+  //$fb + u8 => field KO code; map it to a compact KO 12x12 glyph index.
+  function renderKoGlyph {
+    jsl increment
+    jsl read
+    jsl fieldKoIndex
+    jsl increment
+    jmp renderKoGlyphLoaded
+  }
+
+  function fieldKoIndex {
+    php; rep #$30
+    and #$00ff; tax
+    lda.l koLargeFont.map,x; and #$00ff
+    plp; rtl
+  }
+
+  function renderKoGlyphLoaded {
+    enter; ldb #$7e
+    and #$00ff; sta character
+
+    //drawCursor points at an x,y tile coordinate.
+    lda lineNumber; and #$0003; mul(30); pha
+    lda pixel; div(8); add $01,s; sta $01,s; pla
+    sep #$20; sta.b drawCursor; rep #$20
+
+    //target <= wramOffset + lineNumber * 0x3c0 + (pixel / 8) * 32
+    lda lineNumber; mul($3c0); pha
+    lda pixel; and #$00f8; asl #2; add $01,s
+    add wramOffset; tay; pla
+
+    //source <= KO font page + character * 48
+    lda pixel; and #$0004; beq +; lda.w #$3000; bra ++; +; lda.w #$0000; +
+    pha; lda character; mul(48); add $01,s; tax; pla
+
+    lda pixel; add #$000c; cmp pixels; bcc +; beq +
+    lda pixels; sta pixel; leave; rtl
+  +;sta pixel
+
+    lda color; jne yellow
+
+    macro render(variable font) {
+      macro line(variable n) {
+        lda.l font+$00+n*2,x; ora.w $0000+n*2,y; sta.w $0000+n*2,y
+        lda.l font+$18+n*2,x; ora.w $0020+n*2,y; sta.w $0020+n*2,y
+      }
+      line(0); line(1); line(2);  line(3);  line(4);  line(5)
+      line(6); line(7); line(8);  line(9);  line(10); line(11)
+      leave; rtl
+    }
+
+    normal:; render(koLargeFont.normal)
+    yellow:; render(koLargeFont.yellow)
   }
 
   //this function converts rendered tiledata from 2bpp (at $7e:d000+) to 4bpp (at $7e:e000+)

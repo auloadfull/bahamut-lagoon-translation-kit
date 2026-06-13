@@ -276,6 +276,8 @@ function width {
     cmp.w #command.styleNormal; bne +; lda.w #$00; sta style; bra loop; +
     cmp.w #command.styleItalic; bne +; lda.w #$60; sta style; bra loop; +
     cmp.w #command.alignSkip;   bne +; lda $0000,x; and #$00ff; inx; add pixel; sta pixel; bra loop; +
+    cmp.w #command.reserved0;   bne +; inx; inx; lda pixel; add #$000c; sta pixel; bra loop; +
+    cmp.w #command.reserved1;   bne +; inx;      lda pixel; add #$000c; sta pixel; bra loop; +
     cmp.w #command.pause;       bne +; inx; bra loop; +
     cmp.w #command.wait;        jcs epilogue
     bra loop

@@ -50,6 +50,7 @@ namespace renderLargeText {
       cmp.w #command.alignCenter; bne +; jsl align.center; bra loop; +
       cmp.w #command.alignRight;  bne +; jsl align.right;  bra loop; +
       cmp.w #command.alignSkip;   bne +; jsl align.skip;   bra loop; +
+      cmp.w #command.reserved0;   bne +; jsl renderKoGlyph; jmp loop; +
       iny; jmp loop
     }
 
@@ -70,6 +71,7 @@ namespace renderLargeText {
     ldx #$0000
     loop: {
       lda [buffer],y; iny; and #$00ff
+      cmp.w #command.reserved0; bne +; jsl koGlyph;  bra loop; +
       cmp.w #command.name;     bne +; jsl name;     bra loop; +
       cmp.w #command.redirect; bne +; jsl redirect; bra loop; +
       sta text,x; inx
@@ -97,6 +99,13 @@ namespace renderLargeText {
     lda text-2,x; and #$00ff; cmp.w #'s'; beq +
     append.byte(text, 's')
   +;rtl
+  }
+
+  function koGlyph {
+    sta text,x; inx
+    lda [buffer],y; iny; and #$00ff; sta text,x; inx
+    lda [buffer],y; iny; and #$00ff; sta text,x; inx
+    rtl
   }
 
   function redirect {
@@ -179,6 +188,42 @@ namespace renderLargeText {
 
     normal:; render(largeFont.normal)
     yellow:; render(largeFont.yellow)
+  }
+
+  //$fa + u16 => compact KO 12x12 glyph index
+  function renderKoGlyph {
+    iny; lda [buffer],y; and #$00ff; sta character
+    iny; lda [buffer],y; and #$00ff; xba; add character; sta character
+    iny; phy
+
+    //select the WRAM write location for the current character:
+    //Y <= lineNumber * 1024 + tileNumber * 32
+    lda.w lineNumber; mul(1024); pha
+    lda pixel; and #$00f8; asl #2; add $01,s; tay; pla
+
+    //select the font read location:
+    //X <= (pixel & 4 ? shifted-page : base-page) + character * 48
+    lda pixel; and #$0004; beq +; lda.w #$3000; bra ++; +; lda.w #$0000; +
+    pha; lda character; mul(48); add $01,s; tax; pla
+
+    lda pixel; add #$000c; cmp pixels; bcc +; beq +
+    lda pixels; sta pixel; ply; rtl
+  +;sta pixel
+
+    lda color; jne yellow
+
+    macro render(variable font) {
+      macro line(variable n) {
+        lda.l font+$00+n*2,x; ora.w wramBuffer+$00+n*2,y; sta.w wramBuffer+$00+n*2,y
+        lda.l font+$18+n*2,x; ora.w wramBuffer+$20+n*2,y; sta.w wramBuffer+$20+n*2,y
+      }
+      line(0); line(1); line(2);  line(3);  line(4);  line(5)
+      line(6); line(7); line(8);  line(9);  line(10); line(11)
+      ply; rtl
+    }
+
+    normal:; render(koLargeFont.normal)
+    yellow:; render(koLargeFont.yellow)
   }
 }
 

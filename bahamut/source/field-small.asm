@@ -91,6 +91,15 @@ namespace index {
     asl; tax; lda index.table4x16,x; tax; pla
   }
 
+  function resetPlayerStatus {
+    php; rep #$20
+    lda.w #$0000
+    sta.l index.for.bpp2
+    sta.l index.for.int3
+    sta.l index.for.int4
+    plp; rtl
+  }
+
   //reserved tiles (2bpp):
   //$00-$2f = graphical overlay + movement cutouts
   //$de-$e2 = static tiles ("HP") + window borders
@@ -506,6 +515,7 @@ namespace name {
   //A => player name
   function player {
     enter; ldb #$31; stz.w cursor
+    pha; lda $16; cmp.w #$c442; bne +; jsl index.resetPlayerStatus; +; pla
     pha; lda.w #type.player; sta type; pla
     and #$00ff
     cmp #$0009; jcs static
