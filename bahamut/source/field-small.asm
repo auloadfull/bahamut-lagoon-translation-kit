@@ -11,13 +11,21 @@ namespace command {
 }
 
 namespace glyph {
-  constant hp        = $de  //$de-$df
+  constant lv        = $a5  //font-field row 11, column 6
+  constant hp        = $a6  //font-field row 11, column 7
+  constant mp        = $a7  //font-field row 11, column 8
+  constant sp        = $a8  //font-field row 11, column 9
+  constant dash      = $71  //font-field row 8, column 2
   constant defeated  = $f2
   constant petrified = $f1
   constant sleeping  = $ee
   constant poisoned  = $f0
   constant bunny     = $ec
   constant bingo     = $ed
+}
+
+namespace font {
+  constant field = $c8a000
 }
 
 //this code handles copying the 8-bit string at $00,x to the 16-bit WRAM tilemap.
@@ -181,9 +189,9 @@ namespace write {
 //since these aren't used in the translation, remove the line
 namespace shrinkMenuHeight {
   enqueue pc
-  //move the text one line up
-  seek($c0e0b5); adc #$0004  //adc #$0046
-  seek($c0ead7); adc #$15    //adc #$1b
+  //restore native cursor/text padding while keeping the shortened menu height
+  seek($c0e0b5); adc #$0046
+  seek($c0ead7); adc #$1b
   //remove one line from the menu height
   seek($c0e1e4); jml hookCommandMenu; nop #2
   seek($c0e1c0); jml hookOptionsMenu; nop #2
@@ -195,7 +203,7 @@ namespace shrinkMenuHeight {
   //c0e1e7  jsr $e288
   //------
   function hookCommandMenu {
-    lda $b6; asl; dec
+    lda $b6; asl
     pea $e1e9; jml $c0e288
   }
 
@@ -270,6 +278,7 @@ function getMinimumMenuWidth {
 
   constant menuIndex = $09f0
   constant isTechniqueMenu = $64
+  constant minimumNativeWidth = 7
 
   variable(2, minimumWidth)
 
@@ -298,7 +307,9 @@ function getMinimumMenuWidth {
     dey; bne loop
   }
 
-  lda minimumWidth; inc  //include one tile on the left for the cursor
+  lda minimumWidth; inc #2  //include the cursor tile and native right padding
+  cmp.w #minimumNativeWidth; bcs +
+  lda.w #minimumNativeWidth; +
   ply; plx; plp; rtl
 }
 
@@ -314,6 +325,7 @@ namespace menuWidthPlacement {
   constant menuItemCount    = $b6
   constant menuCursorPixelX = $b7
   constant indexMode        = $b0  //#$00 = field menu; #$64 = tech menu
+  constant isTechniqueMenu  = $64
 
   constant borderTileWidth  =  2
   constant windowStartLeft  = 16
@@ -354,7 +366,8 @@ namespace menuWidthPlacement {
 
     //now set the tilemap write location and menu cursor icon positions:
     and #$00ff; lsr #2; clc; adc #$4104; tay  //set tilemap write location
-    sep #$20; lda.l windowPositionX; dec #2; sta.b menuCursorPixelX  //X cursor position
+    sep #$20; lda.l windowPositionX; dec #2; add.b #8
+    sta.b menuCursorPixelX  //X cursor position
     lda.b menuItemCount; asl; inc; asl #3; sta.l windowMaskHeight
 
     rep #$30; plx; pla; plp; rtl
@@ -464,7 +477,7 @@ namespace menu {
 
   function writeMap {
     lda itemIndex; mul(128); add.b mapAddress; tay
-    lda menuWidth; tax
+    lda menuWidth; dec; tax
     lda tileIndex; ora #$2300  //add tile attributes to tile index
   -;sta $0040,y
     inc; iny #2
@@ -599,6 +612,8 @@ namespace status {
 }
 
 namespace class {
+  constant playerBacktrack = 9
+
   enqueue pc
   seek($c0e027); jsl player; rts
   seek($c0dbcb); jsl dragon; nop #3
@@ -616,7 +631,7 @@ namespace class {
     beq +; leave; rtl; +  //skip printing class name if there are icons
 
     lda #$0008; index.bpp2(); write.bpp2(lists.classes.bpp2)
-    txa; sep #$30; ldx.w cursor; dex #8
+    txa; sep #$30; ldx.w cursor; dex #playerBacktrack
     sta.w output,x; inx; inc
     sta.w output,x; inx; inc
     sta.w output,x; inx; inc
@@ -624,6 +639,7 @@ namespace class {
     sta.w output,x; inx; inc
     sta.w output,x; inx; inc
     sta.w output,x; inx; inc
+    sta.w output,x; inx; lda.b #' '
     sta.w output,x; inx; stx.w cursor
     leave; rtl
   }
@@ -674,15 +690,21 @@ namespace level {
   dequeue pc
 
   function main {
+    variable(2, tileIndex)
+
     enter; ldb #$31
-    ldx $18; lda $7e0002,x; and #$00ff; min.w(100); mul(4); tay  //100+ => "??"
-    lda #$0004; index.int4(); write.bpp2(lists.levels4.bpp2)
-    txa; sep #$30; ldx.w cursor; pha; lda.b #command.tileBank1
+    ldx $18; lda $7e0002,x; and #$00ff; ldx #$0000
+    append.alignSkip(2)
+    cmp.w #100; bcs unknown; append.integer_2(); bra +
+    unknown:; append.literal("^^"); +
+    lda #$0002; render.small.bpp2()
+    index.int3(); stx tileIndex
+    ldx tileIndex; inx; lda #$0002; write.bpp2()
+    ldx tileIndex; ldy.w #glyph.lv; lda #$0001; write.bpp2(font.field)
+    ldx tileIndex; txa; sep #$30; ldx.w cursor; pha; lda.b #command.tileBank2
     sta.w output,x; inx; pla
     sta.w output,x; inx; inc
     sta.w output,x; inx; inc
-    sta.w output,x; inx; inc
-    sta.w output,x; inx; lda.b #command.tileBank2
     sta.w output,x; inx; stx.w cursor
     leave; rtl
   }
@@ -694,19 +716,28 @@ namespace hp {
   dequeue pc
 
   function main {
-    variable(2, counter)
+    variable(2, tileIndex)
 
     enter; ldb #$31
     ldx $18; lda $7e0005,x; ldx #$0000
+    pha; lda.w name.type; and #$00ff; cmp.w #name.type.enemy; beq +
+    pla; append.alignSkip(2); bra ++
+  +;pla
+  +
     cmp.w #10000; bcs unknown; append.integer_4(); bra +
     unknown:; append.literal("^^^^"); +
-    lda #$0003; render.small.bpp2()
-    index.int3(); write.bpp2()
-    txa; sep #$30; ldx.w cursor; pha; lda.b #glyph.hp
-    sta.w output,x; inx; inc
+    lda #$0004; render.small.bpp2()
+    index.bpp2(); stx tileIndex
+    ldx tileIndex; inx; lda #$0004; write.bpp2()
+    ldx tileIndex; ldy.w #glyph.hp; lda #$0001; write.bpp2(font.field)
+    ldx tileIndex; txa; sep #$30; ldx.w cursor; pha; lda.b #' '
+    sta.w output,x; inx; lda.b #command.tileBank2
     sta.w output,x; inx; pla
     sta.w output,x; inx; inc
     sta.w output,x; inx; inc
+    sta.w output,x; inx; inc
+    sta.w output,x; inx; inc
+    sta.w output,x; inx; lda.b #command.tileBank2
     sta.w output,x; inx; lda.b #' '
     sta.w output,x; inx; stx.w cursor
     leave; rtl
@@ -722,27 +753,31 @@ namespace mp {
   dequeue pc
 
   variable(2, marker)
+  variable(2, tileIndex)
 
   //A => original font marker tile
   function main {
     enter; ldb #$31
 
+    and #$00ff; cmp #$00d8; beq sp  //$d7 = MP, $d8 = SP
+    mp:; lda.w #glyph.mp; sta marker; bra +
+    sp:; lda.w #glyph.sp; sta marker; +
+
     ldx #$0000
     append.alignRight()
-    and #$00ff; cmp #$00d8; beq sp  //$d7 = MP, $d8 = SP
-    mp:; append.literal("MP"); append.alignSkip(2); bra +
-    sp:; append.literal("SP"); append.alignSkip(3); +
-
     phx; ldx $18; lda $7e0009,x; plx
     cmp.w #1000; bcs unknown; append.integer_3(); bra +
     unknown:; append.literal("^^^"); +
-    lda #$0004; render.small.bpp2()
-    index.int4(); write.bpp2()
-    txa; sep #$30; ldx.w cursor; pha; lda.b #command.tileBank1
+    lda #$0003; render.small.bpp2()
+    index.int4(); stx tileIndex
+    ldx tileIndex; inx; lda #$0003; write.bpp2()
+    ldx tileIndex; ldy marker; lda #$0001; write.bpp2(font.field)
+    ldx tileIndex; txa; sep #$30; ldx.w cursor; pha; lda.b #command.tileBank1
     sta.w output,x; inx; pla
     sta.w output,x; inx; inc
     sta.w output,x; inx; inc
     sta.w output,x; inx; inc
+    sta.w output,x; inx; lda.b #command.tileBank2
     sta.w output,x; inx; lda.b #command.terminal
     sta.w output,x
     leave; rtl
@@ -751,18 +786,17 @@ namespace mp {
   function none {
     enter; ldb #$31
 
-    ldx #$0000
-    append.alignRight()
-    append.literal("MP")
-    append.alignSkip(2)
-    append.literal("~~~")
-    lda #$0004; render.small.bpp2()
-    index.int4(); write.bpp2()
-    txa; sep #$30; ldx.w cursor; pha; lda.b #command.tileBank1
+    index.int4(); stx tileIndex
+    ldx tileIndex; ldy.w #glyph.dash; lda #$0001; write.bpp2(font.field)
+    ldx tileIndex; inx; ldy.w #glyph.dash; lda #$0001; write.bpp2(font.field)
+    ldx tileIndex; inx #2; ldy.w #glyph.dash; lda #$0001; write.bpp2(font.field)
+    ldx tileIndex; inx #3; ldy.w #glyph.dash; lda #$0001; write.bpp2(font.field)
+    ldx tileIndex; txa; sep #$30; ldx.w cursor; pha; lda.b #command.tileBank1
     sta.w output,x; inx; pla
     sta.w output,x; inx; inc
     sta.w output,x; inx; inc
     sta.w output,x; inx; inc
+    sta.w output,x; inx; lda.b #command.tileBank2
     sta.w output,x; inx; lda.b #command.terminal
     sta.w output,x
     leave; rtl

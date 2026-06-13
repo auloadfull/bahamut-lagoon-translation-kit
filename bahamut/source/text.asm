@@ -196,6 +196,7 @@ namespace append {
   }
 
   macro integer02(target) {; append.emitter1(integer02); }
+  macro integer03(target) {; append.emitter1(integer03); }
   macro integer_2(target) {; append.emitter1(integer_2); }
   macro integer_3(target) {; append.emitter1(integer_3); }
   macro integer_4(target) {; append.emitter1(integer_4); }
@@ -234,6 +235,27 @@ namespace emit {
   -;cmp.w #10; bcc +; sub.w #10; iny; bra -
   +;pha; tya; add.w #'0'; sta output+0; pla
     add.w #'0'; ora #$ff00; sta output+1
+    leave; rtl
+  }
+
+  //converts a 16-bit integer into "000"-"999"
+  //A => integer
+  function integer03 {
+    variable(8, output)
+
+    enter
+  -;cmp.w #10000; bcc +; sub.w #10000; bra -; +  //discard 10000s digit
+  -;cmp.w  #1000; bcc +; sub.w  #1000; bra -; +  //discard  1000s digit
+
+    ldy.w #0
+  -;cmp.w #100; bcc +; sub.w #100; iny; bra -
+  +;pha; tya; add.w #'0'; sta output+0; pla
+
+    ldy.w #0
+  -;cmp.w #10; bcc +; sub.w #10; iny; bra -
+  +;pha; tya; add.w #'0'; sta output+1; pla
+
+    add.w #'0'; ora #$ff00; sta output+2
     leave; rtl
   }
 
@@ -752,6 +774,7 @@ namespace append {
 
   //functions reduce code generation size
   function integer02 {; append.emitter2(integer02); }
+  function integer03 {; append.emitter2(integer03); }
   function integer_2 {; append.emitter2(integer_2); }
   function integer_3 {; append.emitter2(integer_3); }
   function integer_4 {; append.emitter2(integer_4); }
@@ -776,6 +799,7 @@ namespace append {
 
   //macros provide consistent interface with argument-taking macros
   macro integer02() {; jsl append.integer02; }
+  macro integer03() {; jsl append.integer03; }
   macro integer_2() {; jsl append.integer_2; }
   macro integer_3() {; jsl append.integer_3; }
   macro integer_4() {; jsl append.integer_4; }

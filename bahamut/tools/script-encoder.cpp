@@ -129,6 +129,24 @@ auto Encoder::encodeScript(Script& script, vector<string>& english) -> void {
           context.script.append(Command::Wait);
           continue;
         }
+        if(read.command == "ko") {
+          u32 glyph = read.argument.hex();
+          if(script.mode == Script::Mode::Field) {
+            if(auto code = TextEncoder::koFieldCode(glyph)) {
+              context.script.append(Command::Reserved1);
+              context.script.append(*code);
+            } else {
+              error("missing field KO glyph: ", read.argument, "\n", text, "\n");
+            }
+          } else {
+            context.script.append(Command::Reserved0);
+            context.script.append(glyph >> 0 & 0xff);
+            context.script.append(glyph >> 8 & 0xff);
+          }
+          x += 12;
+          if(x > 240) error("overflow detected: {\n", text, "\n}\n");
+          continue;
+        }
         if(auto index = TextEncoder::name(read.command)) {
           context.script.append(Command::Name);
           context.script.append(*index);

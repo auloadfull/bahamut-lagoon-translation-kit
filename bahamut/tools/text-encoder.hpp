@@ -46,6 +46,8 @@ struct TextEncoder : FontEncoder {
   auto push() -> void;
   auto pop() -> void;
   auto setStyle(Style) -> void;
+  auto koGlyph(u32 codepoint) -> maybe<u32>;
+  auto koFieldCode(u32 glyph) -> maybe<u8>;
   auto read(const string& text, u32& index) -> Read;
   auto name(const string& text) -> maybe<u32>;
   auto lineWidth(const string& text, u32 index = 0) -> maybe<u32>;
@@ -90,6 +92,65 @@ auto TextEncoder::pop() -> void {
 auto TextEncoder::setStyle(Style style) -> void {
   if(style == Style::Normal) this->style = 0x00;
   if(style == Style::Italic) this->style = 0x60;
+}
+
+auto TextEncoder::koGlyph(u32 codepoint) -> maybe<u32> {
+  struct Entry {
+    u32 codepoint;
+    u32 index;
+  };
+  static vector<Entry> entries;
+
+  if(!entries) {
+    auto lines = string::read({pathEN, "../../../bahamut/ko/tables/ko-large-glyphs.tsv"}).split("\n");
+    for(auto& line : lines) {
+      if(!line) continue;
+      auto columns = line.split("\t");
+      if(columns.size() < 2) continue;
+
+      u32 key = 0;
+      for(u32 offset : range(columns[0].size())) {
+        key = key << 8 | u8(columns[0][offset]);
+      }
+
+      Entry entry;
+      entry.codepoint = key;
+      entry.index = columns[1].natural();
+      entries.append(entry);
+    }
+  }
+
+  for(auto& entry : entries) {
+    if(entry.codepoint == codepoint) return entry.index;
+  }
+  return nothing;
+}
+
+auto TextEncoder::koFieldCode(u32 glyph) -> maybe<u8> {
+  struct Entry {
+    u32 glyph;
+    u8 code;
+  };
+  static vector<Entry> entries;
+
+  if(!entries) {
+    auto lines = string::read({pathEN, "../../../bahamut/ko/tables/ko-field-glyphs.tsv"}).split("\n");
+    for(auto& line : lines) {
+      if(!line) continue;
+      auto columns = line.split("\t");
+      if(columns.size() < 3) continue;
+
+      Entry entry;
+      entry.glyph = columns[1].natural();
+      entry.code = columns[2].hex();
+      entries.append(entry);
+    }
+  }
+
+  for(auto& entry : entries) {
+    if(entry.glyph == glyph) return entry.code;
+  }
+  return nothing;
 }
 
 auto TextEncoder::read(const string& text, u32& index) -> Read {
@@ -138,6 +199,21 @@ auto TextEncoder::read(const string& text, u32& index) -> Read {
     return Read().setCommand("color", "normal");
   }
 
+  if(auto glyph = TextEncoder::koGlyph(p3)) {
+    index += 3;
+    return Read().setCommand("ko", hex(*glyph, 4L));
+  }
+
+  if(auto glyph = TextEncoder::koGlyph(p2)) {
+    index += 2;
+    return Read().setCommand("ko", hex(*glyph, 4L));
+  }
+
+  if(auto glyph = TextEncoder::koGlyph(p1)) {
+    index += 1;
+    return Read().setCommand("ko", hex(*glyph, 4L));
+  }
+
      maybe<u8> decoded = toDecoded(p1);
   if(!decoded) decoded = toDecoded(p2);
   if(!decoded) decoded = toDecoded(p3);
@@ -183,6 +259,10 @@ auto TextEncoder::lineWidth(const string& text, u32 index) -> maybe<u32> {
     if(read.isLineFeed()) break;
     if(read.isCommand()) {
       if(read.command == "color") continue;
+      if(read.command == "ko") {
+        width += 12;
+        continue;
+      }
       if(read.command == "skip") {
         width += read.argument.natural();
         continue;

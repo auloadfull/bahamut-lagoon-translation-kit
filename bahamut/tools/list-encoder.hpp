@@ -13,17 +13,33 @@ auto ListEncoder::toSmall(string suffix, array_view<u8> palette, u32 characters,
   static_assert(BitsPerPixel == 2 || BitsPerPixel == 4);
   const u32 TileSize = (BitsPerPixel == 2 ? 16 : 32);
   const bool Manual = (characters == 0);
+  const bool JPMenuLevelIcons = name == "levelsMagic" || (name == "levels" && (suffix == "bpp2" || suffix == "bpp4"));
+  const bool JPFieldLevelIcons = name == "levelsFieldMagic";
+  const bool JPLevelIcons = JPMenuLevelIcons || JPFieldLevelIcons;
   if(palette.size() != 4) error("palette size incorrect");
 
   vector<u8> icons;
-  icons.resize(12 * TileSize);
+  icons.resize(23 * TileSize);
   if(BitsPerPixel == 2) {
-    auto font = decompressLZ77({rom.data() + 0x2e0020, rom.size() - 0x2e0020});
-    memory::copy(icons.data(), font.data() + 0xd5 * TileSize, icons.size());
+    auto menuFont = decompressLZ77({rom.data() + 0x2e0020, rom.size() - 0x2e0020});
+    memory::copy(icons.data(), menuFont.data() + 0xd5 * TileSize, 12 * TileSize);
+    if(JPFieldLevelIcons) {
+      auto fieldFont = array_view<u8>{rom.data() + 0x08a000, rom.size() - 0x08a000};
+      memory::copy(icons.data() + 12 * TileSize, fieldFont.data() + 0xa5 * TileSize, TileSize);
+      memory::copy(icons.data() + 13 * TileSize, fieldFont.data() + 0x7f * TileSize, TileSize);
+      memory::copy(icons.data() + 14 * TileSize, fieldFont.data() + 0x80 * TileSize, 9 * TileSize);
+    } else {
+      memory::copy(icons.data() + 12 * TileSize, menuFont.data() + 0xe6 * TileSize, TileSize);
+      memory::copy(icons.data() + 13 * TileSize, menuFont.data() + 0xaf * TileSize, 10 * TileSize);
+    }
   } else if(BitsPerPixel == 4 && palette[0] == 0) {
     auto font = decompressLZ77({rom.data() + 0x2e0020, rom.size() - 0x2e0020});
     for(u32 icon : range(12)) {
       memory::copy(icons.data() + icon * 32, font.data() + (0xd5 + icon) * 16, 16);
+    }
+    memory::copy(icons.data() + 12 * 32, font.data() + 0xe6 * 16, 16);
+    for(u32 digit : range(10)) {
+      memory::copy(icons.data() + (13 + digit) * 32, font.data() + (0xaf + digit) * 16, 16);
     }
   } else {
     auto font = array_view<u8>{rom.data() + 0x261b40, rom.size() - 0x261b40};
@@ -78,9 +94,52 @@ auto ListEncoder::toSmall(string suffix, array_view<u8> palette, u32 characters,
     lines.append("{icon:0}No Armor");
   }
   if(name == "levels") {
-    for(u32 index : range(100)) lines.append({"{right}Lv.{skip:1}", pad(index, 2, '_')});
-    lines.append("{right}Lv.{skip:1}^^");  //"??"
-    lines.append("{right}Lv.{skip:1}~~");  //"--"
+    if(JPMenuLevelIcons) {
+      // Menus using the normal levels list also need the original Japanese
+      // menu LV glyph and digits; otherwise callers that still reference
+      // lists.levels keep showing the English patch numeric font.
+      for(u32 index : range(100)) {
+        string line = "{icon:13}";
+        if(index >= 10) line.append("{icon:", 14 + index / 10, "}");
+        else line.append("{icon:0}");
+        line.append("{icon:", 14 + index % 10, "}");
+        lines.append(line);
+      }
+      lines.append("{icon:13}^^");  //"??"
+      lines.append("{icon:13}~~");  //"--"
+    } else {
+      for(u32 index : range(100)) lines.append({"{right}Lv.{skip:1}", pad(index, 2, '_')});
+      lines.append("{right}Lv.{skip:1}^^");  //"??"
+      lines.append("{right}Lv.{skip:1}~~");  //"--"
+    }
+  }
+  if(name == "levelsMagic") {
+    // JP font-menu.bmp is a 16x16 sheet; 1-based row 15, col 7 => tile $e6.
+    // bpp4 is used by character LV fields and keeps a two-digit numeric slot.
+    // bpp2 is used by technique/magic lists and keeps the original one-digit
+    // technique LV layout.
+    for(u32 index : range(100)) {
+      string line = "{icon:13}";
+      if(index >= 10) line.append("{icon:", 14 + index / 10, "}");
+      else if(suffix == "bpp4") line.append("{icon:0}");
+      line.append("{icon:", 14 + index % 10, "}");
+      lines.append(line);
+    }
+    lines.append("{icon:13}^^");  //"??"
+    lines.append("{icon:13}~~");  //"--"
+  }
+  if(name == "levelsFieldMagic") {
+    // JP font-field.bmp uses tile $a5 for the original field technique level icon.
+    // Icons 14-23 are JP field digits 0-9, keeping field menus matched to the
+    // original field font rather than the English patch's small font.
+    for(u32 index : range(100)) {
+      string line = "{icon:13}";
+      if(index >= 10) line.append("{icon:", 14 + index / 10, "}");
+      line.append("{icon:", 14 + index % 10, "}");
+      lines.append(line);
+    }
+    lines.append("{icon:13}^^");  //"??"
+    lines.append("{icon:13}~~");  //"--"
   }
   if(name == "levels4") {
     for(u32 index : range(100)) lines.append({"{right}Lv.{skip:1}", pad(index, 2, '_'), "{skip:5}"});
@@ -138,10 +197,13 @@ auto ListEncoder::toSmall(string suffix, array_view<u8> palette, u32 characters,
         if(characters > 32) error("bad width value");
       } else if(command.match("icon:?*")) {
         auto icon = command.trimLeft("icon:", 1L).natural();
-        if(icon > 12) error("bad icon index: ", icon);
+        if(icon > 23) error("bad icon index: ", icon);
         //note: this ignores palette[0] background color; but in practice this works in-game
-        if(icon != 0) memory::copy(output.data(), icons.data() + (icon - 1) * TileSize, TileSize);
-        x += 9;
+        if(icon != 0) {
+          if(x % 8 != 0) error("icon draw position is not tile-aligned");
+          memory::copy(output.data() + x / 8 * TileSize, icons.data() + (icon - 1) * TileSize, TileSize);
+        }
+        x += JPLevelIcons ? 8 : 9;
       } else if(command.match("right")) {
         if(auto width = TextEncoder::lineWidth(line)) {
           x = characters * 8 - width();

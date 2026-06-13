@@ -15,8 +15,8 @@ namespace information {
   seek($eea65a); string.skip()  //disable static "-" page separator
   seek($eeefd7); string.skip()  //disable static "-" page separator
   seek($eea673); lda #$06f0     //"Page#" text position
-  seek($eeef97); lda #$06f0     //"Page#" text position
-  seek($eeeff0); lda #$06f0     //"Page#" text position
+  seek($eeef97); lda #$06ea     //"Page#" text position
+  seek($eeeff0); lda #$06e6     //"Page#" text position
   seek($eea63c); nop #4         //disable "Page#" window border cutout
   seek($eeefa0); nop #4         //disable "Page#" window border cutout
 
@@ -115,9 +115,9 @@ namespace itemExplanation {
   seek($eeef50); jsl countRight
   seek($eeedd4); adc #$0016  //X cursor offset
   seek($eeef06); lda #$0006  //item position (left)
-  seek($eeef1a); lda #$0018  //count position (left)
+  seek($eeef1a); lda #$001a  //count position (left)
   seek($eeef31); lda #$0022  //item position (right)
-  seek($eeef45); lda #$0034  //count position (right)
+  seek($eeef45); lda #$0036  //count position (right)
   dequeue pc
 
   //A => item
@@ -132,20 +132,28 @@ namespace itemExplanation {
   //A => count
   function countLeft {
     enter
-    tilemap.setColorIvory()
-    and #$00ff; min.w(100)  //100+ => "??"
-    mul(3); tay
-    lda #$0003; jsl information.index.countLeft; write.bpp2(lists.counts.bpp2)
+    tilemap.setColorWhite()
+    and #$00ff
+    ldx #$0000
+    cmp.w #100; bcc +; append.literal(" ??"); bra render; +
+    append.literal(" "); append.integer_2()
+  render:
+    lda #$0003; render.small.bpp2()
+    lda #$0003; jsl information.index.countLeft; write.bpp2()
     leave; rtl
   }
 
   //A => count
   function countRight {
     enter
-    tilemap.setColorIvory()
-    and #$00ff; min.w(100)  //100+ => "??"
-    mul(3); tay
-    lda #$0003; jsl information.index.countRight; write.bpp2(lists.counts.bpp2)
+    tilemap.setColorWhite()
+    and #$00ff
+    ldx #$0000
+    cmp.w #100; bcc +; append.literal(" ??"); bra render; +
+    append.literal(" "); append.integer_2()
+  render:
+    lda #$0003; render.small.bpp2()
+    lda #$0003; jsl information.index.countRight; write.bpp2()
     leave; rtl
   }
 }

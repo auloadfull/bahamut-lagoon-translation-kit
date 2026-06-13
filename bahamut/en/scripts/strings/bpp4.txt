@@ -2,6 +2,8 @@
 {width: 8}Defense
 {width: 8}Speed
 {width: 8}Magic
+{width: 5}Weapon
+{width: 5}Armor
 {width: 8}EXP
 {width: 8}Next Lv.
 {width:16}Overwrite save?

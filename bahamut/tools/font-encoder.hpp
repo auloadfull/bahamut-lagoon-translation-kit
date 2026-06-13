@@ -6,6 +6,7 @@
 struct FontEncoder {
   auto load(const string& name, u32 width, u32 height) -> void;
   auto loadMenuIcons() -> void;
+  auto replaceCharacter(u8 character, array_view<u8> data, u8 width) -> void;
   auto character(u8 character) const -> const u8*;
   auto width(u8 character) const -> u8;
   auto kerning(u8 character, u8 previous) const -> u8;
@@ -107,6 +108,17 @@ auto FontEncoder::loadMenuIcons() -> void {
         }
         characters[0x70 + index].data[py * 8 + px] = color;
       }
+    }
+  }
+}
+
+auto FontEncoder::replaceCharacter(u8 character, array_view<u8> data, u8 width) -> void {
+  if(character >= size()) throw;
+  characters[character].width = width;
+  memory::fill<u8>(characters[character].data, 272);
+  for(u32 py : range(context.height)) {
+    for(u32 px : range(context.width)) {
+      characters[character].data[py * context.width + px] = data[py * context.width + px];
     }
   }
 }

@@ -497,6 +497,10 @@ function drawWindowBG3 {
   drawWindow($2000,$f8,$eb,$ec,$eb,$ec)
 }
 
+function drawWindowEquipment {
+  drawWindow($2000,$f8,$eb,$ec,$eb,$ec)
+}
+
 function drawWindowOverview {
   drawWindow($2000,$f8,$fd,$fe,$fd,$fe)
 }

@@ -38,6 +38,10 @@ auto ScriptEncoder::lineWidth(const string& text, u32 index) -> maybe<u32> {
       if(read.command == "color") continue;
       if(read.command == "pause") continue;
       if(read.command == "wait" ) continue;
+      if(read.command == "ko") {
+        width += 12;
+        continue;
+      }
       if(auto index = TextEncoder::name(read.command)) {
         if(*index <= 9) {
           //dynamic name; assume the longest possible width

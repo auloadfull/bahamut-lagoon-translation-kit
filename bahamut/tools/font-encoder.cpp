@@ -7,6 +7,30 @@ FontEncoder largeFont;
 FontEncoder smallFont;
 FontEncoder fixedFont;
 
+auto restoreSmallFontJapaneseAscii() -> void {
+  FontExtractor menu;
+  menu.extractMenu();
+
+  auto replace = [&](u8 target, u8 source, u8 width = 8) -> void {
+    smallFont.replaceCharacter(target, menu.character(source), width);
+  };
+
+  // Original JP menu font slots for ASCII used by the variable-width 8x8 renderer.
+  for(u8 index : range(26)) replace(0x01 + index, 0xb9 + index);  //A-Z
+  for(u8 index : range(26)) replace(0x1b + index, 0xb9 + index);  //a-z as JP uppercase
+  for(u8 index : range(10)) replace(0x36 + index, 0xaf + index);  //0-9
+
+  replace(0x35, 0xa1);  //hyphen
+  replace(0x40, 0xd4);  //period
+  replace(0x41, 0xd3);  //comma
+  replace(0x42, 0xa7);  //question mark
+  replace(0x43, 0xa6);  //exclamation mark
+  replace(0x46, 0xd4);  //colon
+  replace(0x4a, 0xae);  //slash
+  replace(0x4b, 0xa8);  //left parenthesis
+  replace(0x4c, 0xa9);  //right parenthesis
+}
+
 auto rebuildMenuFont() -> void {
   vector<u8> output = decompressLZ77({rom.data() + 0x2e0020, rom.size() - 0x2e0020});
 
@@ -86,9 +110,11 @@ auto rebuildFieldFont() -> void {
     }
   };
 
-  //static tiles
-  replace(0x56, 0xde);  //'HP'
-  replace(0x57, 0xdf);
+  //Keep the original Japanese field stat label icons (LV/MP/SP/HP).
+  //The English patch expanded HP into two fixed-font tiles here, which
+  //crowded the field party summary columns and left the SP value clipped.
+  //Also keep a stable 8px Japanese dash for enemy units without MP/SP.
+  memory::copy(output.data() + (0xd9 - 0x30) * 16, rom.data() + 0x08a000 + 0x71 * 16, 16);
 
   //move "Bingo" icon to a more optimal location (replacing unused status icon)
   memory::copy(output.data() + (0xed - 0x30) * 16, output.data() + (0xf5 - 0x30) * 16, 16);
@@ -398,6 +424,7 @@ auto nall::main() -> void {
   largeFont.load("font-large",8,11);
   smallFont.load("font-small",8, 8);
   fixedFont.load("font-fixed",8, 8);
+  restoreSmallFontJapaneseAscii();
 
   file::write({pathEN, "binaries/fonts/font-large-normal.bin"}, largeFont.encodeCharacters({0,1,0,2}));
   file::write({pathEN, "binaries/fonts/font-large-yellow.bin"}, largeFont.encodeCharacters({0,3,0,2}));

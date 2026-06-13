@@ -65,6 +65,8 @@ namespace bpp2 {
   constant( 9,commandWait)
   constant( 3,boss)
   constant( 3,space)
+  constant( 7,chapterLabel)
+  constant( 4,turnLabel)
 }
 
 namespace bpp4 {
@@ -73,6 +75,8 @@ namespace bpp4 {
   constant( 8,defense)
   constant( 8,speed)
   constant( 8,magic)
+  constant( 5,weapon)
+  constant( 5,armor)
   constant( 8,experience)
   constant( 8,nextLevel)
   constant(16,overwriteSave)
@@ -81,6 +85,7 @@ namespace bpp4 {
   constant( 4,yes)
   constant( 4,no)
   constant( 5,finished)
+  constant( 4,magicCost)
 }
 
 namespace bpo4 {

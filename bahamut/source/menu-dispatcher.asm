@@ -213,6 +213,7 @@ namespace dispatcher {
     variable(2, pageIndex)
     variable(2, pageTotal)
     variable(2, counter)
+    variable(2, pageAddress)
 
     //A => current page
     function index {
@@ -226,6 +227,7 @@ namespace dispatcher {
       enter
       tilemap.setColorWhite()
       and #$00ff; sta pageTotal
+      lda screen.id; cmp.w #screen.information; bne +; jmp information; +
       ldx #$0000
       append.styleTiny()
       append.alignSkip(2)
@@ -255,6 +257,30 @@ namespace dispatcher {
         getTileIndex(counter, 2); mul(6); add #$03f4; tax
         lda #$0006; write.bpp2()
         leave; rtl
+      }
+
+      information: {
+        ldx #$0000
+        append.alignSkip(8)
+        append.literal("PAGE")
+        {
+          lda tilemap.address; sta pageAddress
+          tilemap.write($a0fc)
+          append.alignLeft()
+          append.alignSkip(44)
+          lda pageIndex; append.integer_2(); append.literal("/")
+          lda pageTotal; append.integer_2()
+          lda #$000a; render.small.bpp2()
+          ldx #$03f4
+          lda render.tiles
+          write.bpp2()
+          phb; ldb #$7e
+          lda pageAddress; add #$0002; tax
+          lda.w #$a0fc; sta.w tilemap.location,x
+          lda #$0001; sta.w tilemap.transfer
+          plb
+          leave; rtl
+        }
       }
     }
 

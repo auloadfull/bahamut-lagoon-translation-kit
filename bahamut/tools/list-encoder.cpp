@@ -24,6 +24,8 @@ auto nall::main() -> void {
     encoder.toSmall<2,0>("bpp2", bpp2, 3, "dynamic", "costsSP");
     encoder.toSmall<2,0>("bpp2", bpp2, 3, "dynamic", "counts");
     encoder.toSmall<2,0>("bpp2", bpp2, 3, "dynamic", "levels");
+    encoder.toSmall<2,0>("bpp2", bpp2, 3, "dynamic", "levelsMagic");
+    encoder.toSmall<2,0>("bpp2", bpp2, 3, "dynamic", "levelsFieldMagic");
     encoder.toSmall<2,0>("bpp2", bpp2, 4, "dynamic", "levels4");
     encoder.toSmall<2,0>("bpp2", bpp2, 2, "dynamic", "quantities");
     encoder.toSmall<2,0>("bpp2", bpp2, 3, "dynamic", "stats");
@@ -37,6 +39,7 @@ auto nall::main() -> void {
     encoder.toSmall<4,0>("bpp4", bpp4, 0, "strings", "bpp4");
     encoder.toSmall<4,0>("bpp4", bpp4, 8, "strings", "chapters");
     encoder.toSmall<4,0>("bpp4", bpp4, 3, "dynamic", "levels");
+    encoder.toSmall<4,0>("bpp4", bpp4, 3, "dynamic", "levelsMagic");
     encoder.toSmall<4,0>("bpp4", bpp4, 3, "dynamic", "stats");
 
     vector<u8> bpo4 = {4,1,2,3};

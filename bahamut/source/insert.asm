@@ -140,6 +140,12 @@ namespace largeFont {
   insert("fonts/font-large", kernings)
 }
 
+namespace koLargeFont {
+  insert("fonts/font-ko-large", normal)
+  insert("fonts/font-ko-large", yellow)
+  insert("fonts/font-ko-field", map)
+}
+
 namespace smallFont {
   insert("fonts/font-small", data)
   insert("fonts/font-small", widths)
@@ -204,6 +210,10 @@ namespace costsMP {
   insert("lists/costsMP", bpi4)
 }
 
+namespace costsMP_num {
+  insert("lists/costsMP_num", bpi4)
+}
+
 namespace costsSP {
   insert("lists/costsSP", bpp2)
   insert("lists/costsSP", bpa4)
@@ -248,6 +258,15 @@ namespace levels {
   insert("lists/levels", bpp2)
   insert("lists/levels", bpp4)
   insert("lists/levels", bpo4)
+}
+
+namespace levelsMagic {
+  insert("lists/levelsMagic", bpp2)
+  insert("lists/levelsMagic", bpp4)
+}
+
+namespace levelsFieldMagic {
+  insert("lists/levelsFieldMagic", bpp2)
 }
 
 namespace levels4 {
