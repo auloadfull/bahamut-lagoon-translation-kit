@@ -3,6 +3,22 @@ namespace menu {
 seek(codeCursor)
 
 namespace unit {
+  constant KO_UNIT_DRAGON_RELOCATE_NAME_BLOCK = 0
+  constant KO_UNIT_DRAGON_FORCE_LV_ROW        = 0
+  constant KO_UNIT_DRAGON_CUSTOM_HDMA         = 0
+  constant KO_UNIT_DETAIL_TOP_POSITIONS       = 1
+  constant KO_UNIT_CLEAR_UNUSED_DRAGON_STATS  = 0
+  constant KO_UNIT_DRAGON_LOWER_JP_ALIGN      = 1
+  constant KO_UNIT_PLAYER_LIST_NO_CLASS       = 1
+  constant KO_UNIT_DRAGON_NAME_POS            = $0692
+  constant KO_UNIT_DRAGON_LV_POS              = $0712
+  constant KO_UNIT_DRAGON_HP_POS              = $0792
+  constant KO_UNIT_DRAGON_MP_POS              = $0812
+  constant KO_UNIT_DRAGON_NAME_ROW_DELTA      = $ff80
+  constant KO_UNIT_DRAGON_RIGHT_LABEL_DELTA   = $ff80
+  constant KO_UNIT_DRAGON_RIGHT_VALUE_DELTA   = $ff7e
+  constant KO_UNIT_DRAGON_PROPERTY_DELTA      = $0002
+
   enqueue pc
 
   seek($eeada3); jsl name
@@ -35,15 +51,15 @@ namespace unit {
 
   // Near EN layout only: unit detail label/stat positions.
   // KO JP layout disabled: keep original Japanese 8x8-grid coordinates.
-  if KO_LAYOUT_NEAR_TUNED {
+  if KO_LAYOUT_NEAR_TUNED && KO_UNIT_DETAIL_TOP_POSITIONS {
     seek($eeade3); lda #$0060     //"LV" position
-    seek($eeadf4); lda #$00d0     //status icon(s) position
+    seek($eeadf4); lda #$00da     //status icon(s) position
     seek($eeae3a); lda #$0150     //"HP" position
 
-    seek($eeaf1a); lda #$0074  //"Attack#"  position
-    seek($eeaf4c); lda #$00f4  //"Defense#" position
-    seek($eeaf7e); lda #$0174  //"Speed#"   position
-    seek($eeafb0); lda #$01f4  //"Magic#"   position
+    seek($eeaf1a); lda #$0078  //"Attack#"  position
+    seek($eeaf4c); lda #$00f8  //"Defense#" position
+    seek($eeaf7e); lda #$0178  //"Speed#"   position
+    seek($eeafb0); lda #$01f8  //"Magic#"   position
   }
 
   //player and dragon statistics
@@ -77,10 +93,10 @@ namespace unit {
   if KO_LAYOUT_NEAR_TUNED {
     seek($eeac8d); lda #$0046  //X cursor position (player - from field)
     seek($eeac86); adc #$fff9  //Y cursor position
-    seek($eeab00); lda #$0046  //X cursor position (dragon - from field)
-    seek($eeab07); lda #$008d  //Y cursor position
-    seek($eeaa2d); lda #$0046  //X cursor position (dragon - from dragon formation)
-    seek($eeaa34); lda #$008d  //Y cursor position
+    seek($eeab00); lda #$0044  //X cursor position (dragon - from field)
+    seek($eeab07); lda #$0089  //Y cursor position
+    seek($eeaa2d); lda #$0044  //X cursor position (dragon - from dragon formation)
+    seek($eeaa34); lda #$0089  //Y cursor position
   }
 
   //player statistics HDMA fix:
@@ -101,8 +117,13 @@ namespace unit {
   allocator.create( 6, 1,unknown)
   allocator.create( 5, 4,level)
   allocator.create( 8, 4,class)
+  allocator.create(47, 1,jpNumberTileGuard)
   allocator.create(12, 4,hpRange)
   allocator.create(12, 4,mpRange)
+  allocator.create( 3, 4,playerHpLabel)
+  allocator.create( 9, 4,playerHpValue)
+  allocator.create( 3, 4,playerMpLabel)
+  allocator.create( 9, 4,playerMpValue)
   allocator.create( 5, 1,attackLabel)
   allocator.create( 5, 1,defenseLabel)
   allocator.create( 5, 1,speedLabel)
@@ -122,6 +143,8 @@ namespace unit {
     variable(2, type)
   }
 
+  variable(2, KO_UNIT_LAST_NAME_ADDR)
+
   //A => player or dragon name
   function name {
     variable(2, index)
@@ -137,26 +160,39 @@ namespace unit {
     cmp #$0009; bcs +
     // Near EN layout only: adjusted dragon lower-summary tilemap origin.
     // KO JP layout disabled: preserve the caller's original Japanese tilemap origin.
-    if KO_LAYOUT_NEAR_TUNED {
+    if KO_LAYOUT_NEAR_TUNED && KO_UNIT_DRAGON_RELOCATE_NAME_BLOCK {
       tilemap.setAddress($0792); tilemap.setBaseAddress($07c2)
+    }
+    if KO_UNIT_DRAGON_LOWER_JP_ALIGN {
+      tilemap.incrementAddress(KO_UNIT_DRAGON_NAME_ROW_DELTA)
     }
     lda.w #character.dragon; sta character.type; +
 
     lda index
     cmp #$0009; jcs static
   dynamic:
+    lda tilemap.address
+    sta KO_UNIT_LAST_NAME_ADDR
+    lda index
     mul(8); tay
     allocator.index(name)
     lda #$0008; write.bpp2(names.buffer.bpp2)
-    lda character.type; cmp.w #character.dragon; bne +
-    jmp done; +
+    lda character.type; cmp.w #character.dragon; bne +; jmp done; +
+    if KO_UNIT_PLAYER_LIST_NO_CLASS {
+      lda character.type; cmp.w #character.player; bne +; jmp done; +
+    }
     jmp class
   static:
+    lda tilemap.address
+    sta KO_UNIT_LAST_NAME_ADDR
+    lda index
     mul(8); tay
     allocator.index(name)
     lda #$0008; write.bpp2(lists.names.bpp2)
-    lda character.type; cmp.w #character.dragon; bne +
-    jmp done; +
+    lda character.type; cmp.w #character.dragon; bne +; jmp done; +
+    if KO_UNIT_PLAYER_LIST_NO_CLASS {
+      lda character.type; cmp.w #character.player; bne +; jmp done; +
+    }
 
   class:
     //re-add the missing player/dragon class names below the character names.
@@ -191,6 +227,10 @@ namespace unit {
   function enemy {
     enter
     pha; lda.w #character.enemy; sta character.type; pla
+    pha
+    lda tilemap.address
+    sta KO_UNIT_LAST_NAME_ADDR
+    pla
     and #$00ff; mul(8); tay
     allocator.index(name)
     lda #$0008; write.bpp2(lists.enemies.bpp2)
@@ -209,12 +249,70 @@ namespace unit {
 
   //A => player or enemy level
   function level {
+    variable(2, value)
+    variable(2, oldLevelAddress)
+
     enter
     pha
     lda character.type; cmp.w #character.dragon; bne normal
     jmp dragon
   normal:
     pla
+    and #$00ff; sta value
+    lda tilemap.address; sta oldLevelAddress
+    lda character.type
+    cmp.w #character.player; bne +
+    jmp playerTextLevel
+  +
+    cmp.w #character.enemy; bne +
+    jmp enemy
+  +;jmp oldNormal
+
+  enemy:
+    lda oldLevelAddress
+    sta tilemap.address
+    tilemap.setColorWhite()
+    ldy #$0005; jsl clearSpaces
+
+    lda oldLevelAddress
+    add #$0070
+    sta tilemap.address
+    tilemap.setColorWhite()
+    ldy #$0005; jsl clearSpaces
+
+    lda oldLevelAddress
+    add #$0070
+    sta tilemap.address
+    tilemap.setColorGreen()
+    ldx #$0000; append.literal("LV")
+    lda #$0002; render.small.bpp2()
+    lda #$0002; allocator.index(level); write.bpp2()
+
+    lda oldLevelAddress
+    add #$0076
+    sta tilemap.address
+    tilemap.setColorWhite()
+    lda value
+    jsl $ee4e4e
+    leave; rtl
+
+  playerTextLevel:
+    lda KO_UNIT_LAST_NAME_ADDR
+    add #$0080
+    sta tilemap.address
+    tilemap.setColorGreen()
+    ldx #$0000; append.literal("LV")
+    lda #$0002; render.small.bpp2()
+    lda #$0002; allocator.index(level); write.bpp2()
+    tilemap.setColorWhite()
+    lda value
+    ldx #$0000; append.alignSkip(2); append.integer_2()
+    lda #$0003; render.small.bpp2()
+    lda #$0003; allocator.index(level); inx #2; write.bpp2()
+    leave; rtl
+
+  oldNormal:
+    lda value
     and #$00ff; mul(3); tay
     allocator.index(level)
     lda #$0003; write.bpp2(lists.levels.bpp2)
@@ -223,8 +321,11 @@ namespace unit {
   dragon:
     // Near EN layout only: force adjusted dragon LV row.
     // KO JP layout disabled: preserve the caller's original Japanese LV row.
-    if KO_LAYOUT_NEAR_TUNED {
+    if KO_LAYOUT_NEAR_TUNED && KO_UNIT_DRAGON_FORCE_LV_ROW {
       tilemap.setAddress($0812)
+    }
+    if KO_UNIT_DRAGON_LOWER_JP_ALIGN {
+      tilemap.setAddress(KO_UNIT_DRAGON_LV_POS)
     }
     tilemap.setColorGreen()
     ldx #$0000; append.literal("LV")
@@ -238,21 +339,94 @@ namespace unit {
     leave; rtl
   }
 
-  macro appendDragonInteger4() {
+  function appendDragonInteger4Value {
     // USER_KO_TUNING: pixel-level right alignment for the Near-tuned KO
     // dragon detail HP/MP rows. JP_BASE leaves this extra padding off.
     if KO_USER_KO_TUNING {
-      cmp.w #1000; bcs render{#}
-      cmp.w  #100; bcs skip8{#}
-      cmp.w   #10; bcs skip16{#}
-      append.alignSkip(24); bra render{#}
-    skip16{#}:
-      append.alignSkip(16); bra render{#}
-    skip8{#}:
+      cmp.w #1000; bcs render
+      cmp.w  #100; bcs skip8
+      cmp.w   #10; bcs skip16
+      append.alignSkip(24); bra render
+    skip16:
+      append.alignSkip(16); bra render
+    skip8:
       append.alignSkip(8)
     }
-  render{#}:
+  render:
+    append.integer_4()
+    rtl
+  }
+
+  macro appendDragonInteger4() {
+    jsl appendDragonInteger4Value
+  }
+
+  function appendUnitInteger3Value {
+    cmp.w #$ffff; bne +
+    append.literal("---")
+    bra done
+  +;cmp.w #1000; bcc valid
+    append.literal("???")
+    bra done
+  valid:
+    cmp.w #100; bcs render
+    cmp.w #10; bcs twoDigits
+  oneDigit:
+    append.alignSkip(16)
+    bra render
+  twoDigits:
+    append.alignSkip(8)
+  render:
     append.integer5()
+  done:
+    rtl
+  }
+
+  macro appendUnitInteger3() {
+    jsl appendUnitInteger3Value
+  }
+
+  function appendPaddedUnitRange3Value {
+    phy
+    append.alignSkip(8)
+    jsl appendUnitInteger3Value
+    append.literal("/")
+    append.alignSkip(8)
+    ply
+    tya
+    jsl appendUnitInteger3Value
+    rtl
+  }
+
+  function appendEnemyHpInteger4Value {
+    cmp.w #1000; bcs render
+    append.alignSkip(2)
+  render:
+    append.integer_4()
+    rtl
+  }
+
+  function appendEnemyRange4Value {
+    phy
+    jsl appendEnemyHpInteger4Value
+    append.literal("/")
+    ply
+    tya
+    jsl appendEnemyHpInteger4Value
+    rtl
+  }
+
+  //Y => number of blank tiles to write at the current tilemap address.
+  function clearSpaces {
+    enter; ldb #$7e
+    lda tilemap.address; tax
+    lda.w #glyph.space; ora tilemap.attributes
+  -;cpy #$0000; beq +
+    sta.w tilemap.location,x; inx #2
+    dey; bra -
+  +;txa; sta tilemap.address
+    lda #$0001; sta tilemap.transfer
+    leave; rtl
   }
 
   namespace hp {
@@ -270,14 +444,47 @@ namespace unit {
     function setMaximum {
       enter
       sta maximum
-      lda character.type; cmp.w #character.dragon; beq dragon
+      lda character.type; cmp.w #character.dragon; bne +; jmp dragon; +
+      cmp.w #character.player; bne +; jmp playerHpRange; +
+      cmp.w #character.enemy; bne +; jmp enemyHpRange; +
+
+    oldHpRange:
       lda maximum; tay; lda current
       ldx #$0000; append.hpRange()
       lda #$000b; render.small.bpp2()
       allocator.index(hpRange); jsl write.bpp2
       leave; rtl
 
+    enemyHpRange:
+      tilemap.setColorGreen()
+      ldx #$0000; append.literal("HP:")
+      lda #$0003; render.small.bpp2()
+      lda #$0003; allocator.index(hpRange); write.bpp2()
+      tilemap.setColorWhite()
+      ldx #$0000
+      lda maximum; tay; lda current
+      jsl appendEnemyRange4Value
+      lda #$0009; render.small.bpp2()
+      lda #$0009; allocator.index(hpRange); inx #3; write.bpp2()
+      leave; rtl
+
+    playerHpRange:
+      tilemap.setColorGreen()
+      ldx #$0000; append.literal("HP:")
+      lda #$0003; render.small.bpp2()
+      lda #$0003; allocator.index(playerHpLabel); write.bpp2()
+      tilemap.setColorWhite()
+      ldx #$0000
+      lda maximum; tay; lda current
+      jsl appendPaddedUnitRange3Value
+      lda #$0009; render.small.bpp2()
+      lda #$0009; allocator.index(playerHpValue); write.bpp2()
+      leave; rtl
+
     dragon:
+      if KO_UNIT_DRAGON_LOWER_JP_ALIGN {
+        tilemap.setAddress(KO_UNIT_DRAGON_HP_POS)
+      }
       tilemap.setColorGreen()
       ldx #$0000; append.literal("HP:")
       lda #$0003; render.small.bpp2()
@@ -344,7 +551,14 @@ namespace unit {
 
     function render {
       enter
-      lda character.type; cmp.w #character.dragon; beq dragon
+      lda character.type; cmp.w #character.dragon; bne +; jmp dragon; +
+      cmp.w #character.player; bne +
+      jmp playerMpRange
+    +
+      cmp.w #character.enemy; bne oldMpRange
+      jmp enemyMpRange
+
+    oldMpRange:
       lda type; ldx #$0000
       cmp #$0000; bne +; lda maximum; tay; lda current; append.spRange(); +
       cmp #$0080; bne +; lda maximum; tay; lda current; append.mpRange(); +
@@ -353,30 +567,73 @@ namespace unit {
       lda #$000b; jsl write.bpp2
       leave; rtl
 
-    dragon:
+    playerMpRange:
+      tilemap.setColorGreen()
+      ldx #$0000
+      lda type
+      cmp #$0000; beq playerSp
+      cmp #$0080; beq playerMp
+      jmp oldMpRange
+
+    playerSp:
+      append.literal("SP:")
+      bra playerLabel
+
+    playerMp:
+      append.literal("MP:")
+
+    playerLabel:
+      lda #$0003; render.small.bpp2()
+      lda #$0003; allocator.index(playerMpLabel); write.bpp2()
+      tilemap.setColorWhite()
+      ldx #$0000
+      lda maximum; tay; lda current
+      jsl appendPaddedUnitRange3Value
+      lda #$0009; render.small.bpp2()
+      lda #$0009; allocator.index(playerMpValue); write.bpp2()
+      leave; rtl
+
+    enemyMpRange:
       tilemap.setColorGreen()
       ldx #$0000; append.literal("MP:")
       lda #$0003; render.small.bpp2()
       lda #$0003; allocator.index(mpRange); write.bpp2()
       tilemap.setColorWhite()
       ldx #$0000
-      lda current
-      appendDragonInteger4()
+      lda maximum; tay; lda current
+      jsl appendPaddedUnitRange3Value
+      lda #$0009; render.small.bpp2()
+      lda #$0009; allocator.index(mpRange); inx #3; write.bpp2()
+      leave; rtl
 
-    currentDone:
-      append.literal("/")
-      lda maximum
-      appendDragonInteger4()
-
-    maximumDone:
+    dragon:
+      if KO_UNIT_DRAGON_LOWER_JP_ALIGN {
+        tilemap.setAddress(KO_UNIT_DRAGON_MP_POS)
+      }
+      tilemap.setColorGreen()
+      ldx #$0000; append.literal("MP:")
+      lda #$0003; render.small.bpp2()
+      lda #$0003; allocator.index(mpRange); write.bpp2()
+      tilemap.setColorWhite()
+      ldx #$0000
+      lda maximum; tay; lda current
+      jsl appendPaddedUnitRange3Value
       lda #$0009; render.small.bpp2()
       lda #$0009; allocator.index(mpRange); inx #3; write.bpp2()
       leave; rtl
     }
+
   }
 
   macro writeLabel(define name) {
     enter
+    if KO_UNIT_DRAGON_LOWER_JP_ALIGN {
+      pha
+      lda character.type; cmp.w #character.dragon; bne notDragon{#}
+      tilemap.incrementAddress(KO_UNIT_DRAGON_RIGHT_LABEL_DELTA)
+    notDragon{#}:
+      pla
+    }
     tilemap.setColorGreen()
     ldy.w #strings.bpp2.{name}
     allocator.index({name}Label)
@@ -387,6 +644,23 @@ namespace unit {
   //A => value
   macro writeValue(define name) {
     enter
+    tilemap.incrementAddress($fffe)
+    if KO_UNIT_DRAGON_LOWER_JP_ALIGN {
+      pha
+      lda character.type
+      cmp.w #character.dragon; bne checkPlayer{#}
+      tilemap.incrementAddress(KO_UNIT_DRAGON_RIGHT_VALUE_DELTA)
+      bra positionDone{#}
+    checkPlayer{#}:
+      cmp.w #character.player; bne checkEnemy{#}
+      tilemap.incrementAddress($fffe)
+      bra positionDone{#}
+    checkEnemy{#}:
+      cmp.w #character.enemy; bne positionDone{#}
+      tilemap.incrementAddress($fffe)
+    positionDone{#}:
+      pla
+    }
     tilemap.setColorWhite()
     and #$00ff; mul(3); tay
     allocator.index({name}Value)
@@ -438,7 +712,7 @@ namespace unit {
   }
 
   macro stat(variable index, define name) {
-    lda.w #$0084+index*$80; sta tilemap.address
+    lda.w #$0084+index*$80+KO_UNIT_DRAGON_PROPERTY_DELTA; sta tilemap.address
     tilemap.setColorGreen()
     ldy.w #strings.bpp2.{name}
     allocator.index(propertyLabel)
@@ -452,7 +726,7 @@ namespace unit {
   }
 
   macro statAbbrev(variable index, define name, define label) {
-    lda.w #$0084+index*$80; sta tilemap.address
+    lda.w #$0084+index*$80+KO_UNIT_DRAGON_PROPERTY_DELTA; sta tilemap.address
     tilemap.setColorGreen()
     ldx #$0000; append.literal({label})
     lda #$0006; render.small.bpp2()
@@ -466,7 +740,7 @@ namespace unit {
   }
 
   macro clearStat(variable index) {
-    lda.w #$0084+index*$80; sta tilemap.address
+    lda.w #$0084+index*$80+KO_UNIT_DRAGON_PROPERTY_DELTA; sta tilemap.address
     tilemap.setColorWhite()
     ldx #$0000; append.literal("      ")
     lda #$0006; render.small.bpp2()
@@ -492,7 +766,7 @@ namespace unit {
     enter
     // Near EN layout only: replace the unit-detail HDMA table.
     // KO JP layout disabled: keep the Japanese original HDMA table active.
-    if KO_LAYOUT_NEAR_TUNED {
+    if KO_LAYOUT_NEAR_TUNED && KO_UNIT_DRAGON_CUSTOM_HDMA {
       lda.w #hdmaTable >> 0; sta $004372
       lda.w #hdmaTable >> 8; sta $004373
     }
@@ -509,10 +783,12 @@ namespace unit {
     statAbbrev( 8,intelligence,"MIND")
     stat( 9,timidity)
     stat(10,wisdom)
-    clearStat(11)
-    clearStat(12)
-    clearStat(13)
-    clearStat(14)
+    if KO_UNIT_CLEAR_UNUSED_DRAGON_STATS {
+      clearStat(11)
+      clearStat(12)
+      clearStat(13)
+      clearStat(14)
+    }
     leave; rtl
   }
 }
