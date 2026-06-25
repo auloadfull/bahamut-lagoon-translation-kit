@@ -222,7 +222,7 @@ namespace shrinkMenuHeight {
   //c0e1c3  jsr $e288
   //------
   function hookOptionsMenu {
-    lda $b6; asl; dec
+    lda $b6; asl
     pea $e1c5; jml $c0e288
   }
 }
@@ -233,7 +233,7 @@ namespace options {
   seek($c0e1b4); lda #$0a    //window width
   seek($c0e1b8); ldx #$0028  //window tilemap pitch
   seek($c0c933); lda #$0f    //shadow box top
-  seek($c0c939); lda #$38    //shadow box height
+  seek($c0c939); lda #$40    //shadow box height
   seek($c0c93f); lda #$50    //shadow box left
   seek($c0c945); lda #$af    //shadow box right
   seek($c0c908); lda #$4e    //X cursor offset

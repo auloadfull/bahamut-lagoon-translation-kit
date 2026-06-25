@@ -261,7 +261,7 @@ namespace dispatcher {
 
       information: {
         ldx #$0000
-        append.alignSkip(8)
+        append.alignSkip(9)
         append.literal("PAGE")
         {
           lda tilemap.address; sta pageAddress
