@@ -979,7 +979,7 @@ namespace itemDrop {
   seek($c06278); jsl quantity; nop
   seek($c061f1); jsl piro; jmp $6213
   seek($c06224); ldy #$c444  //item name line position (left)
-  seek($c0623b); adc #$0022  //item name line position (right)
+  seek($c0623b); adc #$001e  //item name line position (right)
   seek($c06253); adc #$0060  //item name line pitch
   dequeue pc
 

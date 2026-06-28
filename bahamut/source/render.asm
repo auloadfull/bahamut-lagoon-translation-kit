@@ -340,7 +340,7 @@ function bpp2 {
     cmp.w #command.alignRight;  bne +; jsl align.right;       bra renderCharacter; +
     cmp.w #command.alignSkip;   bne +; jsl align.skip;        bra renderCharacter; +
     cmp.w #command.break;       jcs epilogue
-    bra renderCharacter
+    jmp renderCharacter
   decode:
     character.decode(); add style; pha
 
@@ -415,13 +415,14 @@ function bpp4 {
   variable(2, pixel)
   variable(2, pixels)
   variable(2, style)
+  variable(2, color)
 
   prologue: {
     enter; ldb #$32
     and #$001f; bne +; lda #$0020; +
     mul(8); sta pixels
     mul(4); render.clear($10)
-    lda #$0000; sta index; sta character; sta pixel; sta style
+    lda #$0000; sta index; sta character; sta pixel; sta style; sta color
   }
 
   renderCharacter: {
@@ -431,12 +432,14 @@ function bpp4 {
     cmp.w #command.base;        bcc decode
     cmp.w #command.styleNormal; bne +; lda.w #$00; sta style; bra renderCharacter; +
     cmp.w #command.styleTiny;   bne +; lda.w #$60; sta style; bra renderCharacter; +
+    cmp.w #command.colorNormal; bne +; lda.w #$00; sta color; bra renderCharacter; +
+    cmp.w #command.colorYellow; bne +; lda.w #$01; sta color; bra renderCharacter; +
     cmp.w #command.alignLeft;   bne +; jsl align.left;        bra renderCharacter; +
     cmp.w #command.alignCenter; bne +; jsl align.center;      bra renderCharacter; +
     cmp.w #command.alignRight;  bne +; jsl align.right;       bra renderCharacter; +
     cmp.w #command.alignSkip;   bne +; jsl align.skip;        bra renderCharacter; +
     cmp.w #command.break;       jcs epilogue
-    bra renderCharacter
+    jmp renderCharacter
   decode:
     character.decode(); add style; pha
 
@@ -456,10 +459,25 @@ function bpp4 {
     plx; add pixel; cmp pixels; bcc +; beq +; jmp epilogue; +
     sta pixel
 
+    lda color; jne colored
+
     tile: {
       macro line(variable n) {
         lda.l smallFont.data+$00+n*2,x; ora.w $6000+n*2,y; sta.w $6000+n*2,y
         lda.l smallFont.data+$10+n*2,x; ora.w $6020+n*2,y; sta.w $6020+n*2,y
+      }
+      line(0); line(1); line(2); line(3); line(4); line(5); line(6); line(7)
+      jmp renderCharacter
+    }
+
+    //Color commands are rare in small bpp4 text.  Render the glyph normally,
+    //then mark only the touched tile pixels with the bph4 high-plane color so
+    //mixed strings such as white digits with sky colons can share one buffer.
+    colored: {
+      macro line(variable n) {
+        lda.l smallFont.data+$00+n*2,x; ora.w $6000+n*2,y; sta.w $6000+n*2,y
+        lda.l smallFont.data+$10+n*2,x; ora.w $6020+n*2,y; sta.w $6020+n*2,y
+        lda.w $6000+n*2,y; ora.w $6001+n*2,y; ora.w $6011+n*2,y; sta.w $6011+n*2,y
       }
       line(0); line(1); line(2); line(3); line(4); line(5); line(6); line(7)
     }

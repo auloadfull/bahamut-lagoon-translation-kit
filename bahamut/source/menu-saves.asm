@@ -17,15 +17,15 @@ namespace saves {
   seek($eefa18); lda #$0000           //"Bonus Dungeon" position
 
   //Slot 1
-  seek($eed280); dw 22, 3                //X,Y cursor position
+  seek($eed280); dw 84,10                //X,Y cursor position
   seek($eed3d2); string.hook(noData)     //"No Data" text
   seek($eed47e); jsl chapter.slot1       //"Chapter#" integer
   seek($eed488); jsl time.slot1; nop #2  //"Time" timestamp
-  seek($eed3cc); lda #$0086              //"No Data" position
-  seek($eed476); lda #$0086              //"Chapter#" position
-  seek($eed482); lda #$0096              //"Time" position
-  seek($eed46a); lda #$009e              //"Ex-Play" position
-  seek($eed456); lda #$00c6              //"Chapter Name" position
+  seek($eed3cc); lda #$00da              //"No Data" position
+  seek($eed476); lda #$0094              //"Chapter#" position
+  seek($eed482); lda #$0198              //"Time" position
+  seek($eed46a); lda #$00dc              //"Ex-Play" position
+  seek($eed456); lda #$00d6              //"Chapter Name" position
   seek($eef8de); lda #$0086              //"Bonus Dungeon Name" position
   seek($eed4a0); lda #$2400              //"Chapter Name" tiledata position
   seek($eef919); lda #$2400              //"Bonus Dungeon" tiledata position
@@ -33,15 +33,15 @@ namespace saves {
   seek($eef8ff); lda #$0140; jsl writeChapterNameTilemap  //"Bonus Dungeon" text
 
   //Slot 2
-  seek($eed284); dw 22,43                //X,Y cursor position
+  seek($eed284); dw 84,66                //X,Y cursor position
   seek($eed3eb); string.hook(noData)     //"No Data" text
   seek($eed4da); jsl chapter.slot2       //"Chapter#" integer
   seek($eed4e4); jsl time.slot2; nop #2  //"Time" timestamp
-  seek($eed3e5); lda #$01c6              //"No Data" position
-  seek($eed4d2); lda #$01c6              //"Chapter#" position
-  seek($eed4de); lda #$01d6              //"Time" position
-  seek($eed4c6); lda #$01de              //"Ex-Play" position
-  seek($eed4b2); lda #$0206              //"Chapter Name" position
+  seek($eed3e5); lda #$029a              //"No Data" position
+  seek($eed4d2); lda #$0254              //"Chapter#" position
+  seek($eed4de); lda #$0358              //"Time" position
+  seek($eed4c6); lda #$029c              //"Ex-Play" position
+  seek($eed4b2); lda #$0296              //"Chapter Name" position
   seek($eef935); lda #$01c6              //"Bonus Dungeon Name" position
   seek($eed4fc); lda #$2800              //"Chapter Name" tiledata position
   seek($eef970); lda #$2800              //"Bonus Dungeon" tiledata position
@@ -49,15 +49,15 @@ namespace saves {
   seek($eef956); lda #$0180; jsl writeChapterNameTilemap  //"Bonus Dungeon" text
 
   //Slot 3
-  seek($eed288); dw 22,83                //X,Y cursor position
+  seek($eed288); dw 84,122               //X,Y cursor position
   seek($eed404); string.hook(noData)     //"No Data" text
   seek($eed536); jsl chapter.slot3       //"Chapter#" integer
   seek($eed540); jsl time.slot3; nop #2  //"Time" timestamp
-  seek($eed3fe); lda #$0306              //"No Data" position
-  seek($eed52e); lda #$0306              //"Chapter#" position
-  seek($eed53a); lda #$0316              //"Time" position
-  seek($eed522); lda #$031e              //"Ex-Play" position
-  seek($eed50e); lda #$0346              //"Chapter Name" position
+  seek($eed3fe); lda #$045a              //"No Data" position
+  seek($eed52e); lda #$0414              //"Chapter#" position
+  seek($eed53a); lda #$0518              //"Time" position
+  seek($eed522); lda #$045c              //"Ex-Play" position
+  seek($eed50e); lda #$0456              //"Chapter Name" position
   seek($eef98c); lda #$0306              //"Bonus Dungeon Name" position
   seek($eed558); lda #$2c00              //"Chapter Name" tiledata position
   seek($eef9c7); lda #$2c00              //"Bonus Dungeon" tiledata position
@@ -70,15 +70,15 @@ namespace saves {
   seek($eed2e2); string.hook(load)   //"Begin sortie?" text
   seek($eed300); string.hook(yes)    //"Yes" text
   seek($eed30f); string.hook(no)     //"No" text
-  seek($eed28f); lda #$0446          //"Save?" position
-  seek($eed2b2); lda #$0446          //"Continue playing?" position
-  seek($eed2d5); lda #$0446          //"Begin sortie?" position
-  seek($eed2fa); lda #$04c8          //"Yes" position
-  seek($eed309); lda #$0548          //"No" option
-  seek($eed33a); adc #$008b          //Y cursor offset
+  seek($eed28f); lda #$0086          //"Save?" position
+  seek($eed2b2); lda #$0086          //"Continue playing?" position
+  seek($eed2d5); lda #$0086          //"Begin sortie?" position
+  seek($eed2fa); lda #$0108          //"Yes" position
+  seek($eed309); lda #$0188          //"No" option
+  seek($eed33a); adc #$0013          //Y cursor offset
   seek($eed34e); jml clearText; nop  //clear text hook
-  seek($eed362); lda #$0406          //clear offset
-  seek($eed368); ldx #$0010          //clear width
+  seek($eed362); lda #$003a          //clear offset
+  seek($eed368); ldx #$0006          //clear width
   seek($eed36b); ldy #$0006          //clear height
 
   dequeue pc
@@ -88,14 +88,14 @@ namespace saves {
   //if they were double-buffered, they would be updated a frame later than the titles.
   //this would make saving progress feel laggier when updating the onscreen text.
   allocator.bpp4()
-  allocator.create( 8,1,chapterSlot1)
-  allocator.create( 8,1,chapterSlot2)
-  allocator.create( 8,1,chapterSlot3)
+  allocator.create(11,1,chapterSlot1)
+  allocator.create(11,1,chapterSlot2)
+  allocator.create(11,1,chapterSlot3)
   allocator.create(12,3,bonusDungeon)
   allocator.create( 8,1,exPlay)
-  allocator.create(10,1,timeSlot1)
-  allocator.create(10,1,timeSlot2)
-  allocator.create(10,1,timeSlot3)
+  allocator.create(16,1,timeSlot1)
+  allocator.create(16,1,timeSlot2)
+  allocator.create(16,1,timeSlot3)
   allocator.create( 8,1,noData)
   allocator.create(16,1,save)
   allocator.create(16,1,done)
@@ -167,8 +167,8 @@ namespace saves {
   function chapter {
     enter
     tilemap.setColorPalette(0)
-    and #$00ff; mul(8); tay
-    lda #$0008; write.bpp4(lists.chapters.bph4)
+    and #$00ff; mul(11); tay
+    lda #$000b; write.bpp4(lists.chapters.bph4)
     leave; rtl
 
     slot1:; enter; pha; allocator.index(chapterSlot1); pla; jsl chapter; leave; rtl
@@ -185,50 +185,63 @@ namespace saves {
     variable(2, hour)
     variable(2, minute)
     variable(2, second)
+    variable(2, tileIndex)
 
     enter
-    tilemap.setColorPalette(0)
     phx; lda index; tax
     lda $3065c8,x; and #$00ff; sta hour
     lda $3065c9,x; and #$00ff; sta minute
     lda $3065ca,x; and #$00ff; sta second
+    plx; stx tileIndex
 
+    tilemap.setColorPalette(0)
+    ldx #$0000
+    append.alignSkip(16)       //TIME label only +1px; timestamp stays fixed below.
+    append.colorYellow()
+    append.literal("TIME")
+    append.colorNormal()
+    lda #$0006; render.small.bpp4()
+    ldx tileIndex; lda #$0006; write.bpp4()
+
+    tilemap.setColorPalette(0)
     ldx #$0000
     lda hour; cmp.w #100; jcs digits_3
 
   digits_2:
-    append.alignSkip(9)
-    append.literal("Time")
-    append.alignLeft()
-    append.alignSkip(32)
+    append.alignSkip(8)
     lda hour
     append.integer02()
+    append.colorYellow()
     append.literal(":")
+    append.colorNormal()
     lda minute
     append.integer02()
+    append.colorYellow()
     append.literal(":")
+    append.colorNormal()
     lda second
     append.integer02()
-    jmp render
+    jmp renderValue
 
   digits_3:
-    append.alignSkip(6)
-    append.literal("Time")
-    append.alignLeft()
-    append.alignSkip(29)
+    append.alignSkip(5)
     lda hour
     append.integer_3()
+    append.colorYellow()
     append.literal(":")
+    append.colorNormal()
     lda minute
     append.integer02()
+    append.colorYellow()
     append.literal(":")
+    append.colorNormal()
     lda second
     append.integer02()
-    jmp render
+    jmp renderValue
 
-  render:
-    lda #$000a; render.small.bpp4(); render.small.bpp4.to.bph4()
-    lda #$000a; plx; write.bpp4()
+  renderValue:
+    lda #$000a; render.small.bpp4()
+    ldx tileIndex; inx #6; lda #$000a; write.bpp4()
     leave; rtl
 
     slot1:; enter; lda #$0000; sta index; allocator.index(timeSlot1); jsl time; leave; rtl
@@ -264,21 +277,21 @@ namespace saves {
   function save {
     enter
     ldy.w #strings.bpp4.overwriteSave
-    lda #$0010; allocator.index(save); write.bpp4(lists.strings.bpp4)
+    lda #$0006; allocator.index(save); write.bpp4(lists.strings.bpp4)
     leave; rtl
   }
 
   function done {
     enter
     ldy.w #strings.bpp4.continuePlaying
-    lda #$0010; allocator.index(done); write.bpp4(lists.strings.bpp4)
+    lda #$0006; allocator.index(done); write.bpp4(lists.strings.bpp4)
     leave; rtl
   }
 
   function load {
     enter
     ldy.w #strings.bpp4.beginSortie
-    lda #$0010; allocator.index(load); write.bpp4(lists.strings.bpp4)
+    lda #$0006; allocator.index(load); write.bpp4(lists.strings.bpp4)
     leave; rtl
   }
 
