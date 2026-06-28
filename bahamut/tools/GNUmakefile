@@ -60,11 +60,12 @@ obj/script-extractor.o: script-extractor.cpp
 obj/string-scanner.o:   string-scanner.cpp
 
 BASS := ../../bass/out/bass
-KO_LISTS := chapters commands techniques items classes dragons enemies names parties levels levels4 stats stats_bpi4 stats_bpd4 quantities counts costsMP costsMP_num costsSP strings_bpp2 strings_bpp4 strings_bpo4 strings_bph4
+KO_LISTS := chapters commands techniques items classes dragons enemies names parties levels levelsFieldMagic levels4 stats stats_bpi4 stats_bpd4 quantities counts costsMP costsMP_num costsSP strings_bpp2 strings_bpp4 strings_bpo4 strings_bph4
 
 build: cli
 	out/base56
 	out/font-encoder
+	python3 ../../../bahamut/ko/tools/patch_combat_font_ko.py
 	python3 ../../../bahamut/ko/tools/apply_chapter_ko_poc.py
 	out/list-encoder
 	python3 ../../../bahamut/ko/tools/collect_glyph_usage.py

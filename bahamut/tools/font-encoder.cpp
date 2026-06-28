@@ -147,12 +147,9 @@ auto rebuildCombatFont() -> void {
   };
 
   palette = {4,1,2,3};
-  replace(0x50, 0x00d);  //'HP'
-  replace(0x51, 0x00e);
-  replace(0x52, 0x00b);  //'MP'
-  replace(0x53, 0x00c);
-  replace(0x54, 0x01c);  //'SP'
-  replace(0x55, 0x01d);
+  // Keep the original Japanese combat HP/MP/SP label tiles. The English
+  // fixed-font replacements are narrower and visually misalign the KO battle
+  // status window against the Japanese baseline.
   replace(0x5c, 0x010);  //'All'
   replace(0x5d, 0x011);
 

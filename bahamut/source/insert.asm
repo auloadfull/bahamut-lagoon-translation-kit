@@ -268,6 +268,7 @@ namespace levelsMagic {
 
 namespace levelsFieldMagic {
   insert("lists/levelsFieldMagic", bpp2)
+  insert("lists/levelsFieldMagic", bpo4)
 }
 
 namespace levels4 {

@@ -499,14 +499,17 @@ namespace player {
     leave; rtl; found:; sta index
 
     ldx #$0000
+    // KO: render variable-width digits and right-align inside the 3-tile
+    // player stat slot. Fixed 4-character fields overflow with JP-width digits.
+    append.alignRight()
     lda value; cmp.w #10000; bcs above
-    below:; append.integer_4();     bra render  //"####"
-    above:; append.literal("^^^^"); bra render  //"????"
+    below:; append.integer5();      bra render  //"####"
+    above:; append.literal("????"); bra render  //"????"
   render:
     lda #$0003; render.small.bpo4()
     lda index; index.to3x8()
     lda #$0003; write.bpp4()
-    txy; lda target; tax
+    txy; lda target; add #$0002; tax
     lda #$0003; tilemap.write()
     leave; rtl
   }
@@ -531,16 +534,19 @@ namespace player {
     leave; rtl; found:; add #$0004; sta index
 
     ldx #$0000; txy
+    // KO: render variable-width digits and right-align inside the 3-tile
+    // player stat slot. Fixed 4-character fields overflow with JP-width digits.
+    append.alignRight()
     lda available; beq none
     lda value; cmp.w #1000; bcs above
-    below:; append.integer_4();     bra render  //" ###"
-    above:; append.literal("_^^^"); bra render  //" ???"
-    none:;  append.literal("_~~~"); bra render  //" ---"
+    below:; append.integer3();      bra render  //"###"
+    above:; append.literal("???");  bra render  //"???"
+    none:;  append.literal("---");  bra render  //"---"
   render:
     lda #$0003; render.small.bpo4()
     lda index; index.to3x8()
     lda #$0003; write.bpp4()
-    txy; lda target; tax
+    txy; lda target; add #$0002; tax
     lda #$0003; tilemap.write()
     leave; rtl
   }
@@ -579,8 +585,7 @@ namespace name {
 
     enter
     lda.b playerIndex; and #$00ff; xba; tax
-    lda.l nameIndex,x; and #$00ff
-    jsl calculateWidth; max.w(1)  //cannot be zero
+    lda #$0006; sta width  // KO: fixed-width target windows match the Japanese layout
     sep #$20; sta.w windowWidth
     lda.b windowOffset; add #$08; sub width; sta.b windowOffset
     leave; rtl
@@ -760,7 +765,7 @@ namespace enemy {
     enter
     ldx #$0000; append.enemy()
     render.small.width(); add #$0007; div(8)
-    clamp.w(5,8); sta width
+    clamp.w(7,8); sta width
     leave; rtl
   }
 
@@ -820,12 +825,21 @@ namespace enemy {
     }
 
     function write {
-      ldx #$0000; append.hpValue()
-      lda #$0005; ldy #$0000; render.small.bpo4()
+      variable(2, value)
+
+      sta value
+      ldx #$0000
+      lda value; cmp.w #1000; bcc +; append.literal("???"); bra render; +
+      append.integer_3()
+    render:
+      lda #$0003; ldy #$0000; render.small.bpo4()
       index.for9x16(counter)
-      lda #$0005; write.bpp4()
-      txy; jsl tilemap.calculateIndex; sub #$0006; tax
-      lda #$0005; tilemap.write()
+      lda #$0003; write.bpp4()
+      txy; jsl tilemap.calculateIndex; sub #$0004; tax
+      tilemap.write($000d)
+      tilemap.write($000e)
+      inx #2  // KO: keep one 8px blank tile between "HP" and the value.
+      lda #$0003; tilemap.write()
       rtl
     }
   }
@@ -892,6 +906,7 @@ namespace combatMenu {
       cmp count; jcc loop
     }
 
+    lda width; min.w(7); sta width  // KO: keep command windows one tile tighter for Korean commands
     sep #$20; lda width; sta.w windowWidth
     lda.w windowOffset; add #$07; sub width; sta.w windowOffset
     leave; rtl
@@ -951,26 +966,36 @@ namespace technique {
     variable(2, counterCost)
     variable(2, level)
     variable(2, cost)
-    variable(2, index)
+    variable(2, levelIndex)
+    variable(2, costIndex)
 
     enter
     and #$00ff; min.w(100); sta level  //100+ => "Lv.??"
     lda.w costs,y; and #$00ff; min.w(100); sta cost  //100+ => "??"
-    txa; add #$0010; sta index
+    txa; sta levelIndex; add #$0016; sta costIndex
+
+    // Attach the field-style LV marker immediately after the rendered technique
+    // name instead of leaving the old fixed "Lv." column gap.
+    lda name.index; tax
+    lda lists.techniques.widths,x; and #$00ff; asl
+    add levelIndex; sta levelIndex
 
     lda level; mul(3); tay
     index.for3x16L(counterLevel)
-    lda #$0003; write.bpp4(lists.levels.bpo4)
-    txy; lda index; tax
+    lda #$0003; write.bpp4(lists.levelsFieldMagic.bpo4)
+    txy; lda levelIndex; tax
     lda #$0003; tilemap.write()
 
-    lda cost; mul(3); tay
+    // Cost is white number-only text, kept at the far-right cost column.
+    ldx #$0000; txy
+    lda cost; cmp.w #100; bcc +; append.literal("??"); bra renderCost; +
+    lda cost; cmp.w #10; bcs +; append.alignSkip(2); +
+    lda cost; append.integer_2()
+  renderCost:
+    lda #$0003; render.small.bpo4()
     index.for3x16R(counterCost)
-
-    lda name.index; cmp #$004c; bcc sp
-    mp:; lda #$0003; write.bpp4(lists.costsMP.bpa4); bra wr
-    sp:; lda #$0003; write.bpp4(lists.costsSP.bpa4); wr:
-    txy; lda index; add #$0006; tax
+    lda #$0003; write.bpp4()
+    txy; lda costIndex; add #$0002; tax
     lda #$0003; tilemap.write()
 
     //this is needed so that subsequent lines start at the beginning of the line.
@@ -1033,11 +1058,15 @@ namespace item {
     variable(2, value)
 
     enter
-    lda.w counts,y; and #$00ff
-    mul(3); tay
+    lda.w counts,y; and #$00ff; min.w(100)
+    ldx #$0000; txy
+    cmp.w #100; bcc +; append.literal("??"); bra render; +
+    append.integer_2()
+  render:
+    lda #$0003; render.small.bpo4()
     index.for3x16L(counter)
-    lda #$0003; write.bpp4(lists.counts.bpa4)
-    txy; jsl tilemap.calculateIndex; sub #$0002; tax
+    lda #$0003; write.bpp4()
+    txy; jsl tilemap.calculateIndex; tax
     lda #$0003; tilemap.write()
     leave; rtl
   }
@@ -1049,11 +1078,15 @@ namespace item {
     variable(2, counter)
 
     enter
-    lda.l counts,x; and #$00ff
-    mul(3); tay
+    lda.l counts,x; and #$00ff; min.w(100)
+    ldx #$0000; txy
+    cmp.w #100; bcc +; append.literal("??"); bra render; +
+    append.integer_2()
+  render:
+    lda #$0003; render.small.bpo4()
     index.for3x16L(counter)
-    lda #$0003; write.bpp4(lists.counts.bpa4)
-    txy; jsl tilemap.calculateIndex; tax
+    lda #$0003; write.bpp4()
+    txy; jsl tilemap.calculateIndex; add #$0002; tax
     lda #$0003; tilemap.write()
     leave; rtl
   }
@@ -1165,19 +1198,13 @@ namespace item {
       and #$00ff; sta total
 
       ldx #$0000; txy
-      append.byte(map.windowBorder)
-      append.styleTiny()
-      append.alignSkip(1)
-      append.literal("Page")
       lda total; cmp.w #10; jcs total_2
 
       total_1: {
-        append.alignLeft()
-        append.alignSkip(24)
-        lda index; append.integer1(); append.literal("/")
+        append.alignSkip(2)
+        append.literal("_")
+        lda index; append.integer1(); append.literal("/_")
         lda total; append.integer1()
-        append.styleNormal()
-        append.byte(map.windowBorder)
         lda #$0005; render.small.bpo4()
         index.for8x2(counter)
         lda #$0005; write.bpp4()
@@ -1187,19 +1214,14 @@ namespace item {
       }
 
       total_2: {
-        append.alignLeft()
-        append.alignSkip(23)
+        append.alignSkip(2)
         lda index; append.integer_2(); append.literal("/")
-        append.alignLeft()
-        append.alignSkip(37)
         lda total; append.integer_2()
-        append.styleNormal()
-        append.byte(map.windowBorder)
-        lda #$0006; render.small.bpo4()
+        lda #$0005; render.small.bpo4()
         index.for8x2(counter)
-        lda #$0006; write.bpp4()
-        txy; jsl tilemap.calculateIndex; sub #$0008; tax
-        lda #$0006; tilemap.write()
+        lda #$0005; write.bpp4()
+        txy; jsl tilemap.calculateIndex; sub #$0006; tax
+        lda #$0005; tilemap.write()
         leave; rtl
       }
     }
