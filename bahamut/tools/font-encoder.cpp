@@ -153,8 +153,8 @@ auto rebuildCombatFont() -> void {
   replace(0x5c, 0x010);  //'All'
   replace(0x5d, 0x011);
 
-  replace(0x60, 0x16c);  //'EXP'
-  replace(0x61, 0x16d);
+  // Keep the original Japanese combat EXP label tiles. The fixed English
+  // replacements are visibly smaller in the battle result window.
 
   replace(0x70, 0x16a);  //'STR' (strength)
   replace(0x71, 0x16b);
@@ -181,9 +181,8 @@ auto rebuildCombatFont() -> void {
   replace(0x90, 0x004);  //'|'
 
   palette = {4,5,6,3};
-  replace(0x62, 0x0cc);  //'Lv. up!'
-  replace(0x63, 0x0cd);
-  replace(0x64, 0x0ce);
+  // Keep the original Japanese three-tile level-up marker instead of the
+  // smaller fixed-font "Lv. up!" replacement.
 
   //move "Bingo" and "Potion" icons so the 12-tile item icon range can be used for tiledata
   memory::copy(output.data() + 0x0ca * 32, output.data() + 0x01e * 32, 32);  //Bingo

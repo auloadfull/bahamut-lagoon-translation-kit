@@ -226,6 +226,10 @@ namespace counts {
   insert("lists/counts", bpb4)
 }
 
+namespace countsKo {
+  insert("lists/countsKo", bpo4)
+}
+
 namespace defeats {
   insert("lists/defeats", text)
 }

@@ -635,7 +635,7 @@ namespace name {
 namespace experience {
   enqueue pc
   seek($c174b8); jsl main; jmp $74c7
-  seek($c1766a); lda #$02  //"Lv. Up" text position
+  seek($c1766a); lda #$03  //"Lv. Up" text position
   dequeue pc
 
   //X => character table index
@@ -657,11 +657,11 @@ namespace experience {
     leave; rtl; render:
 
     ldx #$0000
-    lda value; append.alignRight(); append.integer_5()
+    lda value; append.alignRight(); append.integer5()
     lda #$0004; render.small.bpo4()
     lda index; index.to4x4(); tax
     lda #$0004; write.bpp4()
-    txy; lda target; sub #$0008; tax
+    txy; lda target; sub #$0006; tax
     lda #$0004; tilemap.write()
     leave; rtl
   }
@@ -682,12 +682,18 @@ namespace piro {
     enter
     lda.w piro; sta value
     ldx #$0000; txy
-    append.alignRight(); append.integer_5(); append.literal(" Piro")
-    lda #$0008; render.small.bpo4()
+    append.alignRight(); append.integer5()
+    lda #$0005; render.small.bpo4()
     index.to8x2(0); tax
-    lda #$0008; write.bpp4()
+    lda #$0005; write.bpp4()
     txy; jsl tilemap.calculateIndex; sub #$0008; tax
-    lda #$0008; tilemap.write()
+    lda #$0005; tilemap.write()
+
+    ldy.w #strings.bpo4.piro
+    index.to8x2(0); add #$0005; tax
+    lda #$0003; write.bpp4(lists.strings.bpo4)
+    txy; jsl tilemap.calculateIndex; add #$0002; tax
+    lda #$0003; tilemap.write()
     leave; rtl
   }
 }
@@ -1059,13 +1065,9 @@ namespace item {
 
     enter
     lda.w counts,y; and #$00ff; min.w(100)
-    ldx #$0000; txy
-    cmp.w #100; bcc +; append.literal("??"); bra render; +
-    append.integer_2()
-  render:
-    lda #$0003; render.small.bpo4()
+    mul(3); tay
     index.for3x16L(counter)
-    lda #$0003; write.bpp4()
+    lda #$0003; write.bpp4(lists.countsKo.bpo4)
     txy; jsl tilemap.calculateIndex; tax
     lda #$0003; tilemap.write()
     leave; rtl

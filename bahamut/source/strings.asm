@@ -92,6 +92,7 @@ namespace bpo4 {
   reset()
   constant( 3,feed)
   constant( 3,exit)
+  constant( 3,piro)
 }
 
 namespace bph4 {

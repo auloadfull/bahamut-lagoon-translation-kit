@@ -603,7 +603,10 @@ namespace status {
     lda $7e0003,x; and.b #status.enchant.mask; sta enchants
 
     sep #$30; ldx.w cursor; ldy.b #0
-    lda ailments; and.b #status.ailment.defeated;  beq +; lda.b #glyph.defeated;  sta.w output,x; inx; iny; +
+    lda name.type; cmp.b #name.type.player; bne +
+    lda ailments; ora enchants; beq +
+    dex
+  +;lda ailments; and.b #status.ailment.defeated;  beq +; lda.b #glyph.defeated;  sta.w output,x; inx; iny; +
     lda ailments; and.b #status.ailment.petrified; beq +; lda.b #glyph.petrified; sta.w output,x; inx; iny; +
     lda ailments; and.b #status.ailment.sleeping;  beq +; lda.b #glyph.sleeping;  sta.w output,x; inx; iny; +
     lda ailments; and.b #status.ailment.poisoned;  beq +; lda.b #glyph.poisoned;  sta.w output,x; inx; iny; +
@@ -616,6 +619,8 @@ namespace status {
     sta.w output,x; inx; iny; bra -
   +;lda name.type; cmp.b #name.type.player; bne +; lda.b #' '
     sta.w output,x; inx
+    lda ailments; ora enchants; beq +
+    inx  //icons are drawn 1 tile left, but following LV/HP cursor stays original
   +;stx.w cursor
     leave; clz; rtl
   }
@@ -756,8 +761,9 @@ namespace hp {
     pla; append.alignSkip(2); bra ++
   +;pla
   +
-    cmp.w #10000; bcs unknown; append.integer_4(); bra +
-    unknown:; append.literal("^^^^"); +
+    append.alignRight()
+    cmp.w #10000; bcs unknown; append.integer5(); bra +
+    unknown:; append.literal("????"); +
     lda #$0004; render.small.bpp2()
     index.bpp2(); stx tileIndex
     ldx tileIndex; inx; lda #$0004; write.bpp2()
@@ -972,8 +978,8 @@ namespace itemDrop {
   seek($c0626d); jsl item; nop #7
   seek($c06278); jsl quantity; nop
   seek($c061f1); jsl piro; jmp $6213
-  seek($c06224); ldy #$c442  //item name line position (left)
-  seek($c0623b); adc #$0020  //item name line position (right)
+  seek($c06224); ldy #$c444  //item name line position (left)
+  seek($c0623b); adc #$0022  //item name line position (right)
   seek($c06253); adc #$0060  //item name line pitch
   dequeue pc
 
@@ -984,10 +990,10 @@ namespace itemDrop {
 
     enter; ldb #$31; stz.w cursor
     lda.w items,x; and #$007f
-    mul(9); tay
-    lda #$0009; index.bpp2(); write.bpp2(lists.items.bpp2)
-    txa; sep #$30; ldx.w cursor
-    sta.w output,x; inx; inc
+    mul(9); inc; tay  //skip item icon tile for field drop messages
+    lda #$0008; index.bpp2(); write.bpp2(lists.items.bpp2)
+    txa; sep #$30; ldx.w cursor; pha; lda.b #' '
+    sta.w output,x; inx; pla
     sta.w output,x; inx; inc
     sta.w output,x; inx; inc
     sta.w output,x; inx; inc
@@ -1007,9 +1013,16 @@ namespace itemDrop {
 
     ldy.b index
     enter; ldb #$31
-    lda.b value; and #$00ff; min.w(100); mul(3); tay  //100+ => "??"
-    lda #$0003; index.int3(); write.bpp2(lists.counts.bpp2)
-    txa; sep #$30; ldx.w cursor; pha; lda.b #command.paletteIvory
+
+    ldx #$0000
+    lda.b value; and #$00ff
+    cmp.w #100; bcc +; append.alignRight(); append.literal("??"); bra render; +
+    append.alignRight(); append.integer_2()
+
+  render:
+    lda #$0003; render.small.bpp2()
+    lda #$0003; index.int3(); write.bpp2()
+    txa; sep #$30; ldx.w cursor; pha; lda.b #command.paletteWhite
     sta.w output,x; inx; pla
     sta.w output,x; inx; inc
     sta.w output,x; inx; inc
@@ -1020,14 +1033,18 @@ namespace itemDrop {
 
   function piro {
     constant value = $0370
+    constant tileIndex = $1d
 
     enter; ldb #$31; stz cursor
     lda.w value
-    ldx #$0000; append.alignRight(); append.integer_5(); append.literal(" Piro")
-    lda #$0007; render.small.bpp2()
-    index.bpp2(); write.bpp2()
-    txa; sep #$30; ldx.w cursor; pha; lda.b #' '
-    sta.w output,x; inx
+    ldx #$0000; append.alignRight(); append.integer5()
+    lda #$0005; render.small.bpp2()
+    index.bpp2(); stx.b tileIndex
+    lda #$0005; write.bpp2()
+    ldy.w #strings.bpp2.piro
+    lda.b tileIndex; add #$0005; tax
+    lda #$0003; write.bpp2(lists.strings.bpp2)
+    lda.b tileIndex; sep #$30; ldx.w cursor; pha; lda.b #' '
     sta.w output,x; inx
     sta.w output,x; inx
     sta.w output,x; inx
@@ -1048,6 +1065,7 @@ namespace itemDrop {
     sta.w output,x; inx
     sta.w output,x; inx
     sta.w output,x; inx; pla
+    sta.w output,x; inx; inc
     sta.w output,x; inx; inc
     sta.w output,x; inx; inc
     sta.w output,x; inx; inc
