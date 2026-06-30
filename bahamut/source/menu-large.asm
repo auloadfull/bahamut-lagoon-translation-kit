@@ -100,8 +100,7 @@ namespace largeText {
     cmp.w #command.alignCenter; bne +; jsl align.center;      bra renderCharacter; +
     cmp.w #command.alignRight;  bne +; jsl align.right;       bra renderCharacter; +
     cmp.w #command.alignSkip;   bne +; jsl align.skip;        bra renderCharacter; +
-    cmp.w #command.reserved0;   bne +; jsl renderKoGlyph;     jmp renderCharacter; +
-    jmp renderCharacter
+    bra renderCharacter
   decode:
     character.decode(); add style; pha
 
@@ -158,60 +157,6 @@ namespace largeText {
     normal:; tile(largeFont.normal)
     yellow:; tile(largeFont.yellow)
     shadow:; tile(largeFont.shadow)
-
-  enqueue pc
-  seek($708000)
-
-  //$fa + u16 => compact KO 12x12 glyph index.
-  function renderKoGlyph {
-    ldy.b index
-    lda [buffer],y; and #$00ff; sta character
-    iny; lda [buffer],y; and #$00ff; xba; add character; sta character
-    iny; sty.b index
-
-    //calculate first RAM tile write position
-    lda pixel; and #$00f8; asl #2; cmp #$0200; bcc +
-    add #$0200; +; sta ramAddressL
-
-    //calculate second RAM tile write position
-    lda pixel; add #$0008; and #$00f8; asl #2; cmp #$0200; bcc +
-    add #$0200; +; sta ramAddressR
-
-    //select one of the two KO large pre-shifted pages
-    lda pixel; and #$0004; beq +; lda.w #$3300; bra ++; +; lda.w #$0000; +
-    pha; lda character; mul(48); add $01,s; tax; pla
-
-    lda pixel; add #$000c; cmp pixels; bcc +; beq +
-    lda pixels; sta pixel; rtl
-  +;sta pixel
-
-    macro tile(variable font) {
-      macro lineL(variable n) {
-        variable t = n + 1
-        variable r = t / 6 * $200 + t % 6 * 2 - t / 6 * 4
-        lda.l font+$00+n*2,x; ora.w output+r,y; sta.w output+r,y
-      }
-      lda ramAddressL; tay
-      lineL(0); lineL(1); lineL(2);  lineL(3);  lineL(4);  lineL(5)
-      lineL(6); lineL(7); lineL(8);  lineL(9);  lineL(10); lineL(11)
-      macro lineR(variable n) {
-        variable t = n + 1
-        variable r = t / 6 * $200 + t % 6 * 2 - t / 6 * 4
-        lda.l font+$18+n*2,x; ora.w output+r,y; sta.w output+r,y
-      }
-      lda ramAddressR; tay
-      lineR(0); lineR(1); lineR(2);  lineR(3);  lineR(4);  lineR(5)
-      lineR(6); lineR(7); lineR(8);  lineR(9);  lineR(10); lineR(11)
-      rtl
-    }
-
-    lda type; cmp.w #type.description; jne normalKo
-    lda color; jne yellowKo
-    normalKo:; tile(koLargeFont.normal)
-    yellowKo:; tile(koLargeFont.yellow)
-  }
-
-  dequeue pc
 
   finished:
     lda type; cmp.w #type.description; bne +; jsl write; +
