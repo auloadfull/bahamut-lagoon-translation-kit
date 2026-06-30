@@ -4,6 +4,26 @@
 
 seek(codeCursor)
 
+namespace nameAlias {
+  // Base56-encoded default names as stored in WRAM/SRAM.  These must stay in
+  // the original English form so user-edited names can still round-trip through
+  // base56 unchanged; Korean is only a display/input-buffer alias when the
+  // stored value exactly matches the default.
+  defaults:
+    dw $ffff,$9fff,$6670,$20e3  //0 Byuu
+    dw $ffff,$4b3f,$370a,$81c9  //1 Yoyo
+    dw $8de7,$de7d,$d0fe,$54e2  //2 Salamander
+    dw $3247,$6f12,$8fd2,$322d  //3 Ice Dragon
+    dw $c4cd,$171b,$ec81,$5a90  //4 Thunderhawk
+    dw $7fff,$4edc,$278f,$3d05  //5 Molten
+    dw $bdff,$0b0b,$6c35,$6383  //6 Twinhead
+    dw $f0ff,$7876,$951d,$3da4  //7 Muni-Muni
+    dw $ffff,$3a4f,$d3a6,$5f6c  //8 Puppy
+    dw $2ef7,$9a9c,$8631,$11b9  //9 Fahrenheit
+
+  include "generated/name-alias-large.asm"
+}
+
 namespace append {
   //X => target index
   //Y => source index
@@ -602,12 +622,27 @@ namespace emit {
   //A => player or dragon name index
   function name {
     variable(16, output)
+    variable( 2, index)
 
     enter
-    and #$00ff; cmp #$000a; bcs static
+    and #$00ff; cmp #$000a; jcs static
+    sta index
+
+  aliasTest:
+    mul(8); tax
+    lda.l nameAlias.defaults+0,x; cmp.l $7e2b00,x; jne dynamic
+    lda.l nameAlias.defaults+2,x; cmp.l $7e2b02,x; jne dynamic
+    lda.l nameAlias.defaults+4,x; cmp.l $7e2b04,x; jne dynamic
+    lda.l nameAlias.defaults+6,x; cmp.l $7e2b06,x; jne dynamic
+
+  alias:
+    ldx #$0000
+    lda index
+    append.stringIndexed(output, nameAlias.koreanText)
+    bra finished
 
   dynamic:
-    mul(8); tay; ldb #$7e
+    lda index; mul(8); tay; ldb #$7e
     lda $2b00,y; sta base56.decode.input+0
     lda $2b02,y; sta base56.decode.input+2
     lda $2b04,y; sta base56.decode.input+4

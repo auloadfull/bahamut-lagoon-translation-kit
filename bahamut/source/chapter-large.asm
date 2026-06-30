@@ -203,7 +203,7 @@ namespace renderLargeText {
 
     //select the font read location:
     //X <= (pixel & 4 ? shifted-page : base-page) + character * 48
-    lda pixel; and #$0004; beq +; lda.w #$3000; bra ++; +; lda.w #$0000; +
+    lda pixel; and #$0004; beq +; lda.w #$3300; bra ++; +; lda.w #$0000; +
     pha; lda character; mul(48); add $01,s; tax; pla
 
     lda pixel; add #$000c; cmp pixels; bcc +; beq +

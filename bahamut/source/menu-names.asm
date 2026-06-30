@@ -14,10 +14,29 @@ namespace decodeNameEntry {
   //$7e2b00 => name table input
   //$7e9e00 <= name output
   //function must return with B set to #$7e: it is used by subsequent code
+  variable(2, index)
+
   main: {
     ldb #$7e  //B set by original routine
     enter
-    and #$00ff; mul(8); tax
+    and #$00ff; sta index
+
+  aliasTest:
+    cmp #$000a; bcs decode
+    mul(8); tax
+    lda.l nameAlias.defaults+0,x; cmp.l $7e2b00,x; bne decode
+    lda.l nameAlias.defaults+2,x; cmp.l $7e2b02,x; bne decode
+    lda.l nameAlias.defaults+4,x; cmp.l $7e2b04,x; bne decode
+    lda.l nameAlias.defaults+6,x; cmp.l $7e2b06,x; bne decode
+
+  alias:
+    ldx #$0000
+    lda index
+    append.stringIndexed($7e9e00, nameAlias.koreanText)
+    leave; rtl
+
+  decode:
+    lda index; mul(8); tax
     lda $2b00,x; sta base56.decode.input+0
     lda $2b02,x; sta base56.decode.input+2
     lda $2b04,x; sta base56.decode.input+4
@@ -50,6 +69,32 @@ namespace encodeNameEntry {
     enter
     and #$00ff; sta index
     mul(8); tax
+
+  aliasTest:
+    lda index; cmp #$000a; bcs encode
+    asl; tax
+    lda.l nameAlias.koreanText,x; tay
+    ldx #$0000
+    phb; ldb #nameAlias.koreanText>>16
+    sep #$20
+  -;lda.w nameAlias.koreanText,y
+    cmp.l $7e9e00,x; bne +
+    inx; iny
+    cmp #$ff; bne -
+    rep #$20
+    plb
+    lda index; mul(8); tax
+    lda.l nameAlias.defaults+0,x; sta.l $7e2b00,x
+    lda.l nameAlias.defaults+2,x; sta.l $7e2b02,x
+    lda.l nameAlias.defaults+4,x; sta.l $7e2b04,x
+    lda.l nameAlias.defaults+6,x; sta.l $7e2b06,x
+    bra render
+
+  +;rep #$20
+    plb
+
+  encode:
+    lda index; mul(8); tax
     lda $9e00; sta base56.encode.input+ 0
     lda $9e02; sta base56.encode.input+ 2
     lda $9e04; sta base56.encode.input+ 4
@@ -63,6 +108,7 @@ namespace encodeNameEntry {
     lda base56.encode.output+4; sta $2b04,x
     lda base56.encode.output+6; sta $2b06,x
 
+  render:
     //pre-render the newly chosen name to the names cache
     lda index; jsl names.render
     leave; rtl

@@ -34,6 +34,7 @@ namespace glyph {
   constant thunder   = $17
   constant earth     = $16
   constant poison    = $15
+  constant affinityColon = $1a
   constant defeated  = $2b
   constant petrified = $2c
   constant sleeping  = $2d
@@ -600,8 +601,7 @@ namespace name {
     constant windowWidth  = $097c
 
     enter
-    lda.l nameIndex; and #$00ff
-    jsl calculateWidth; max.w(5)  //"HP/MP ####" length
+    lda #$0008; sta width  // KO: fixed-width dragon action/status window matches JP layout.
     sep #$20; sta.w windowWidth
     pha; lda #$1e; sub $01,s; sta.w windowOffset; pla
     leave; rtl
@@ -615,8 +615,7 @@ namespace name {
     constant windowWidth = $097c
 
     enter
-    lda.l nameIndex; and #$00ff
-    jsl calculateWidth; max.w(5)  //"EXP" + "Lv. Up" length
+    lda #$0008  // KO: top-left dragon EXP/name window is fixed-width in JP layout.
     sep #$20; sta.w windowWidth
     leave; rtl
   }
@@ -759,7 +758,8 @@ namespace enemy {
     lda ailments,x;   and.b #status.ailment.poisoned;  beq +; iny; +
     lda ailments,x;   and.b #status.ailment.bunny;     beq +; iny; +
 
-    //windowWidth <= max(windowWidth, iconCount)
+    //windowWidth <= max(windowWidth, iconCount + trailing ':' when icons exist)
+    tya; beq +; iny; +
     phy; lda width; cmp $01,s; bcs +
     lda $01,s; sta.w windowWidth; +; ply
 
@@ -769,9 +769,9 @@ namespace enemy {
   //A => enemy name ID
   function calculateWidth {
     enter
-    ldx #$0000; append.enemy()
-    render.small.width(); add #$0007; div(8)
-    clamp.w(7,8); sta width
+    // KO: enemy names are prerendered in 8-tile slots; dynamic 7-tile
+    // widths can clip Korean names and the following affinity marker row.
+    lda #$0008; sta width
     leave; rtl
   }
 
@@ -792,10 +792,13 @@ namespace enemy {
   }
 
   function status {
+    variable(2, target)
+
     lda #$00
     enter; ldb #$7e
 
     txy; jsl tilemap.calculateIndex; tax
+    txa; sta target
     lda properties,y; and.w #status.property.undead;   beq +; tilemap.write(glyph.undead   ); +
     lda affinities,y; and.w #status.affinity.fire;     beq +; tilemap.write(glyph.fire     ); +
     lda affinities,y; and.w #status.affinity.water;    beq +; tilemap.write(glyph.water    ); +
@@ -807,9 +810,13 @@ namespace enemy {
     lda ailments,y;   and.w #status.ailment.sleeping;  beq +; tilemap.write(glyph.sleeping ); +
     lda ailments,y;   and.w #status.ailment.poisoned;  beq +; tilemap.write(glyph.poisoned ); +
     lda ailments,y;   and.w #status.ailment.bunny;     beq +; tilemap.write(glyph.bunny    ); +
+    txa; cmp target; bne +; jmp noColon; +
+      tilemap.write(glyph.affinityColon)
+    noColon:
 
     leave; rtl
   }
+
 
   namespace hp {
     //X => enemy index
@@ -871,12 +878,22 @@ namespace enemy {
     }
 
     function write {
-      ldx #$0000; append.mpValue()
-      lda #$0005; ldy #$0000; render.small.bpo4()
+      variable(2, value)
+
+      sta value
+      ldx #$0000
+      lda value; cmp.w #1000; bcc +; append.literal("???"); bra render; +
+      append.alignSkip(2)
+      append.integer_3()
+    render:
+      lda #$0003; ldy #$0000; render.small.bpo4()
       index.for9x16(counter)
-      lda #$0005; write.bpp4()
-      txy; jsl tilemap.calculateIndex; sub #$0006; tax
-      lda #$0005; tilemap.write()
+      lda #$0003; write.bpp4()
+      txy; jsl tilemap.calculateIndex; sub #$0004; tax
+      tilemap.write($000b)
+      tilemap.write($000c)
+      inx #2  // KO: keep one 8px blank tile between "MP" and the value.
+      lda #$0003; tilemap.write()
       rtl
     }
   }
