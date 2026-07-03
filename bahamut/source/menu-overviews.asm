@@ -35,6 +35,7 @@ namespace overviews {
     and #$00ff
     cmp #$0009; jcs static
   dynamic:
+    jsl koName.renderDefaultToNameBufferBpp2
     mul(8); tay
     lda #$0007; allocator.index(name); write.bpp2(names.buffer.bpp2)
     leave; rtl
@@ -127,6 +128,7 @@ namespace equipments {
     and #$00ff
     cmp #$0009; jcs static
   dynamic:
+    jsl koName.renderDefaultToNameBufferBpp2
     mul(8); tay
     lda #$0007; allocator.index(selectedName); write.bpp2(names.buffer.bpp2)
     leave; rtl

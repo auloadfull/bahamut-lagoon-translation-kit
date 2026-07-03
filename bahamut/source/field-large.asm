@@ -147,9 +147,12 @@ namespace renderLargeText {
 
     function name {
       jsl read
+      jsl koName.appendFieldLargeNameAlias
+      bcs checkPossessive
       append.name(text)
 
       //determine if the name is used as a singular possessive
+    checkPossessive:
       jsl peek; cmp.w #'\''; beq +; rtl; +
       jsl read; append.byte(text, '\'')
       jsl peek; cmp.w #'s';  beq +; rtl; +
@@ -241,6 +244,8 @@ namespace renderLargeText {
     jsl read
     sta.b characterEncoded
     cpx #$0000;                 bne +; jsl initialize; +
+    lda.b characterEncoded
+    cmp.b #command.base;        jcs +
     jsl fieldKoIndex
     cmp.b #$ff;                 beq +
     jsl renderKoGlyphLoaded
@@ -249,14 +254,15 @@ namespace renderLargeText {
     jml $c009bf
   +;lda.b characterEncoded
     cmp.b #command.base;        jcc character
-    cmp.b #command.styleNormal; bne +; lda #$00; sta style; jsl increment; bra render; +
-    cmp.b #command.styleItalic; bne +; lda #$60; sta style; jsl increment; bra render; +
-    cmp.b #command.colorNormal; bne +; lda #$00; sta color; jsl increment; bra render; +
-    cmp.b #command.colorYellow; bne +; lda #$01; sta color; jsl increment; bra render; +
-    cmp.b #command.alignLeft;   bne +; jsl align.left;                     bra render; +
+    cmp.b #command.styleNormal; bne +; lda #$00; sta style; jsl increment; jmp render; +
+    cmp.b #command.styleItalic; bne +; lda #$60; sta style; jsl increment; jmp render; +
+    cmp.b #command.colorNormal; bne +; lda #$00; sta color; jsl increment; jmp render; +
+    cmp.b #command.colorYellow; bne +; lda #$01; sta color; jsl increment; jmp render; +
+    cmp.b #command.alignLeft;   bne +; jsl align.left;                     jmp render; +
     cmp.b #command.alignCenter; bne +; jsl align.center;                   jmp render; +
     cmp.b #command.alignRight;  bne +; jsl align.right;                    jmp render; +
     cmp.b #command.alignSkip;   bne +; jsl align.skip;                     jmp render; +
+    cmp.b #command.reserved0;   bne +; jsl renderKoGlyph16;                lda.b characterLimit; cmp #$01; jne render; jml $c009bf; +
     cmp.b #command.reserved1;   bne +; jsl renderKoGlyph;                  lda.b characterLimit; cmp #$01; jne render; jml $c009bf; +
     cmp.b #command.lineFeed;    bcc +; jml $c0099b; +
     cmp.b #command.pause;       bne +; jsl increment; jsl increment;       jmp render; +
@@ -402,6 +408,23 @@ namespace renderLargeText {
     jsl read
     jsl fieldKoIndex
     jsl increment
+    jmp renderKoGlyphLoaded
+  }
+
+  //$fa + u16 => compact KO 12x12 glyph index.
+  function renderKoGlyph16 {
+    jsl increment
+    jsl read
+    and #$00ff
+    pha
+    jsl increment
+    jsl read
+    and #$00ff
+    xba
+    add $01,s
+    sta $01,s
+    jsl increment
+    pla
     jmp renderKoGlyphLoaded
   }
 

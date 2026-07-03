@@ -127,6 +127,7 @@ namespace equipment {
     and #$00ff
     cmp #$0009; jcs static
   dynamic:
+    jsl koName.renderDefaultToNameBufferBpp4
     mul(8); tay
     lda #$0007; allocator.index(name); write.bpp4(names.buffer.bpp4)
     leave; rtl

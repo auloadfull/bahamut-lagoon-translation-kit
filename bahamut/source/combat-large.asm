@@ -60,6 +60,7 @@ function renderLargeText {
       cmp.w #command.alignCenter; bne +; jsl align.center;      bra loop; +
       cmp.w #command.alignRight;  bne +; jsl align.right;       jmp loop; +
       cmp.w #command.alignSkip;   bne +; jsl align.skip;        jmp loop; +
+      cmp.w #command.reserved0;   bne +; jsl renderKoGlyph;     jmp loop; +
       jmp loop
     }
 
@@ -140,12 +141,58 @@ function renderLargeText {
 
   function name {
     lda [buffer],y; and #$00ff; iny
+    ldx #$0000
+    jsl koName.appendRenderTextLargeNameAlias
+    bcs renderLoop
     ldx #$0000; append.name(); ldx #$0000
+  renderLoop:
     loop: {
       lda render.text,x; and #$00ff; inx
       cmp.w #command.terminal; bne +; rtl; +
+      cmp.w #command.reserved0; bne +
+        lda render.text,x; and #$00ff; sta character; inx
+        lda render.text,x; and #$00ff; xba; add character; sta character; inx
+        phx; jsl renderKoGlyphLoaded; plx; bra loop
+      +
       jsl renderCharacter; bra loop
     }
+  }
+
+  //$fa + u16 => compact KO 12x12 glyph index.
+  function renderKoGlyph {
+    lda [buffer],y; and #$00ff; sta character; iny
+    lda [buffer],y; and #$00ff; xba; add character; sta character; iny
+    jmp renderKoGlyphLoaded
+  }
+
+  function renderKoGlyphLoaded {
+    phx; phy
+
+    //calculate font read position: (pixel & 4 ? shifted-page : base-page) + character * 48
+    lda pixel; and #$0004; beq +; lda.w #$3000; bra ++; +; lda.w #$0000; +
+    pha; lda character; mul(48); add $01,s; tax; pla
+
+    //calculate RAM write position: wramBuffer + pixel / 8 * 32
+    lda pixel; and #$00f8; asl #2; add.w #wramBuffer; tay
+
+    lda pixel; add #$000c; cmp pixels; bcc +; beq +
+    lda pixels; sta pixel; ply; plx; rtl
+  +;sta pixel
+
+    lda color; jne yellowKo
+
+    macro render(variable font) {
+      macro line(variable n) {
+        lda.l font+$00+n*2,x; ora.w $0000+n*2,y; sta.w $0000+n*2,y
+        lda.l font+$18+n*2,x; ora.w $0020+n*2,y; sta.w $0020+n*2,y
+      }
+      line(0); line(1); line(2);  line(3);  line(4);  line(5)
+      line(6); line(7); line(8);  line(9);  line(10); line(11)
+      ply; plx; rtl
+    }
+
+    normalKo:; render(koLargeFont.normal)
+    yellowKo:; render(koLargeFont.yellow)
   }
 
   function redirect {

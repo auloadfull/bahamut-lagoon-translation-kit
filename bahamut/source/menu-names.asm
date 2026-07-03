@@ -4,6 +4,15 @@ namespace menu {
 
 seek(codeCursor)
 
+namespace koNameEntry {
+  // Keep the name-entry buffer one byte per displayed syllable. Multi-byte
+  // $fa KO commands are safe in script renderers, but the name-entry screen
+  // also treats $7e9e00 as an editable byte string; leaking command bytes
+  // produces stray icons. $a8-$c1 are display-only KO proxy syllables here.
+  constant proxyBase       = $00a8
+  constant proxyLimit      = $00c2
+}
+
 namespace decodeNameEntry {
   //called once when loading the name entry screen
   enqueue pc
@@ -14,14 +23,27 @@ namespace decodeNameEntry {
   //$7e2b00 => name table input
   //$7e9e00 <= name output
   //function must return with B set to #$7e: it is used by subsequent code
+  variable(2, index)
+
   main: {
     ldb #$7e  //B set by original routine
     enter
-    and #$00ff; mul(8); tax
+    and #$00ff; sta index
+    mul(8); tax
     lda $2b00,x; sta base56.decode.input+0
     lda $2b02,x; sta base56.decode.input+2
     lda $2b04,x; sta base56.decode.input+4
     lda $2b06,x; sta base56.decode.input+6
+
+    //Show unmodified English defaults as display-only Korean syllable
+    //proxies in the entry preview. Saved base56 bytes stay English unless
+    //encodeNameEntry confirms the same proxy sequence unchanged.
+    lda index
+    jsl koName.writeDefaultNameEntryAlias
+    bcc decodeBase56
+    leave; rtl
+
+  decodeBase56:
     jsl base56.decode
 
     lda base56.decode.output+ 0; sta $9e00
@@ -50,6 +72,16 @@ namespace encodeNameEntry {
     enter
     and #$00ff; sta index
     mul(8); tax
+
+    //If the user accepts a display-only Korean default alias unchanged, keep
+    //the original English base56 payload. Do not feed proxy bytes into base56.
+    lda index
+    jsl koName.storeDefaultFromNameEntryAlias
+    bcc encodeBase56
+    lda index; jsl names.render
+    leave; rtl
+
+  encodeBase56:
     lda $9e00; sta base56.encode.input+ 0
     lda $9e02; sta base56.encode.input+ 2
     lda $9e04; sta base56.encode.input+ 4
@@ -90,7 +122,10 @@ namespace calculateNameLength {
   //$7e9e00 => name
   //A <= length of name in pixels
   function main {
+    jsl koName.nameEntryAliasWidth
+    bcs +
     render.large.width($7e9e00)
+  +
     rtl
   }
 }
@@ -121,6 +156,15 @@ namespace appendNameEntry {
     variable( 2, limit)  //8x8 width limit
 
     enter
+    //If the preview is a display-only Korean default alias and the user starts
+    //typing, replace it with the newly typed English character instead of
+    //appending after the alias syllables.
+    lda.l $7e9e00; and #$00ff
+    cmp.w #koNameEntry.proxyBase; bcc +
+    cmp.w #koNameEntry.proxyLimit; bcs +
+    lda.w #$ffff; sta.l $7e9e00
+    stz $cc
+  +
     lda.w #60+1; sta limit     //dragon name limit (7.5 tiles) + 1 (shadow)
     lda $ca; cmp.w #2; bcs +   //test if this is a player name
     lda.w #52+1; sta limit; +  //player name limit (6.5 tiles) + 1 (shadow)

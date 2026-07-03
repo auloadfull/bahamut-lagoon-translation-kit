@@ -432,6 +432,7 @@ namespace player {
     lda identifier
     cmp #$0009; jcs static
   dynamic:
+    jsl koName.renderDefaultToNameBufferBpp4
     mul(8); tay
     lda index; tax
     lda width; write.bpp4(names.buffer.bpo4)

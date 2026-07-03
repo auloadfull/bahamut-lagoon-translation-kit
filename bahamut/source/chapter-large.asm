@@ -88,9 +88,12 @@ namespace renderLargeText {
 
   function name {
     lda [buffer],y; iny; and #$00ff
+    jsl koName.appendChapterLargeNameAlias
+    bcs checkPossessive
     append.name(text)
 
     //determine if the name is used as a singular possessive
+  checkPossessive:
     lda [buffer],y; and #$00ff; cmp.w #'\''; beq +; rtl; +; iny
     append.byte(text, '\'')
     lda [buffer],y; and #$00ff; cmp.w #'s';  beq +; rtl; +; iny

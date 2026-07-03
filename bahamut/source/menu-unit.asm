@@ -174,6 +174,8 @@ namespace unit {
     lda tilemap.address
     sta KO_UNIT_LAST_NAME_ADDR
     lda index
+    jsl koName.renderDefaultToNameBufferBpp2
+    lda index
     mul(8); tay
     allocator.index(name)
     lda #$0008; write.bpp2(names.buffer.bpp2)

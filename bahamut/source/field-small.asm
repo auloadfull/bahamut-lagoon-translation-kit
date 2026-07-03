@@ -520,6 +520,7 @@ namespace name {
     and #$00ff
     cmp #$0009; jcs static
   dynamic:
+    jsl koName.renderDefaultToNameBufferBpp2
     mul(8); tay
     lda #$0007; index.bpp2(); write.bpp2(names.buffer.bpp2)
     txa; sep #$30; ldx.w cursor
@@ -551,7 +552,9 @@ namespace name {
   function dragon {
     enter; ldb #$31; stz.w cursor
     pha; lda.w #type.dragon; sta type; pla
-    and #$00ff; mul(8); tay
+    and #$00ff
+    jsl koName.renderDefaultToNameBufferBpp2
+    mul(8); tay
     lda #$0008; index.bpp2(); write.bpp2(names.buffer.bpp2)
     txa; sep #$30; ldx.w cursor
     sta.w output,x; inx; inc

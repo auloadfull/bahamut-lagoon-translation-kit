@@ -77,6 +77,7 @@ namespace equipmentSummary {
     and #$00ff
     cmp #$0009; jcs static
   dynamic:
+    jsl koName.renderDefaultToNameBufferBpp2
     mul(8); tay
     lda #$0007
     jsl information.index.name; write.bpp2(names.buffer.bpp2)

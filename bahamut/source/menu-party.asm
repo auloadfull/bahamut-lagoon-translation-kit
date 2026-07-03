@@ -225,7 +225,8 @@ namespace party {
   //A => dragon
   function dragonName {
     enter
-    getDragonName(); mul(8); tay
+    getDragonName(); jsl koName.renderDefaultToNameBufferBpp2
+    mul(8); tay
     lda #$0008; allocator.index(dragon); write.bpp2(names.buffer.bpp2)
     leave; rtl
   }
@@ -322,6 +323,7 @@ namespace party {
     and #$00ff
     cmp #$0009; jcs static
   dynamic:
+    jsl koName.renderDefaultToNameBufferBpp4
     mul(8); tay
     lda #$0007; allocator.index(name); write.bpp4(names.buffer.bpp4)
     leave; rtl

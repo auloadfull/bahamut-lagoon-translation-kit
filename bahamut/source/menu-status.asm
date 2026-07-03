@@ -213,6 +213,8 @@ namespace status {
   dynamic:
     lda tilemap.address; sta playerNameRowAddress
     lda index
+    jsl koName.renderDefaultToNameBufferBpp4
+    lda index
     mul(8); tay
     lda #$0008; allocator.index(name); write.bpp4(names.buffer.bpp4)
     leave; rtl

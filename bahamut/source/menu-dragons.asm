@@ -109,7 +109,8 @@ namespace dragons {
   //A => dragon name
   function deployedName {
     enter
-    getDragonName(); mul(8); tay
+    getDragonName(); jsl koName.renderDefaultToNameBufferBpp4
+    mul(8); tay
     lda #$0008; allocator.index(deployedName); write.bpp4(names.buffer.bpp4)
     leave; rtl
   }
@@ -117,7 +118,8 @@ namespace dragons {
   //A => dragon name
   function reservedName {
     enter
-    getDragonName(); mul(8); tay
+    getDragonName(); jsl koName.renderDefaultToNameBufferBpp4
+    mul(8); tay
     lda #$0008; allocator.index(reservedName); write.bpp4(names.buffer.bpp4)
     leave; rtl
   }
@@ -139,6 +141,7 @@ namespace dragons {
     and #$00ff
     cmp #$0009; jcs static
   dynamic:
+    jsl koName.renderDefaultToNameBufferBpp2
     mul(8); tay
     lda #$0007; allocator.index(playerName); write.bpp2(names.buffer.bpp2)
     leave; rtl
