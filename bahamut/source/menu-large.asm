@@ -102,6 +102,20 @@ namespace largeText {
     cmp.w #command.alignSkip;   bne +; jsl align.skip;        bra renderCharacter; +
     bra renderCharacter
   decode:
+    //Name-entry default Korean aliases live in $7e9e00 as one-byte proxy
+    //syllables.  Handle them only for that exact buffer; Magic/Item
+    //descriptions also use this renderer and must stay on the normal path.
+    pha
+    lda.b buffer+0; cmp.w #naming >> 0; bne normalDecode
+    lda.b buffer+1; cmp.w #naming >> 8; bne normalDecode
+    pla
+    cmp.w #$00a8; bcc decodeLoaded
+    cmp.w #$00c2; bcs decodeLoaded
+    jsl koName.renderMenuLargeNameEntryProxy
+    jmp renderCharacter
+  normalDecode:
+    pla
+  decodeLoaded:
     character.decode(); add style; pha
 
     //perform font kerning

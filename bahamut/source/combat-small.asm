@@ -346,8 +346,8 @@ namespace string {
   enqueue pc
 
   //dragon feeding menu
-  seek($c19afe); lda #$0f  //X position
-  seek($c19b08); lda #$04  //window width
+  seek($c19afe); lda #$0e  //X position; widened for 4-tile KO feed label
+  seek($c19b08); lda #$06  //window width
 
   //string hooks
   write($c19b26,feed)
@@ -1100,13 +1100,14 @@ namespace item {
     enter
     lda.l counts,x; and #$00ff; min.w(100)
     ldx #$0000; txy
-    cmp.w #100; bcc +; append.literal("??"); bra render; +
+    cmp.w #100; bcc +; append.alignRight(); append.literal("??"); bra render; +
+    append.alignRight()
     append.integer_2()
   render:
     lda #$0003; render.small.bpo4()
     index.for3x16L(counter)
     lda #$0003; write.bpp4()
-    txy; jsl tilemap.calculateIndex; add #$0002; tax
+    txy; jsl tilemap.calculateIndex; tax
     lda #$0003; tilemap.write()
     leave; rtl
   }

@@ -90,9 +90,11 @@ namespace bpp4 {
 
 namespace bpo4 {
   reset()
-  constant( 3,feed)
-  constant( 3,exit)
+  constant( 4,feed)
+  constant( 4,exit)
   constant( 3,piro)
+  constant( 2,wisdom)
+  constant( 3,affection)
 }
 
 namespace bph4 {
