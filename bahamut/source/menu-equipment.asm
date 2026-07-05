@@ -463,7 +463,9 @@ namespace equipment {
   function itemName {
     enter
     and #$007f
+    bne +; tilemap.setColorGreen(); bra colorDone; +
     tilemap.setColorWhite()
+  colorDone:
     mul(9); tay
     lda #$0009; allocator.index(itemName); write.bpp2(lists.items.bpp2)
     tilemap.setColorWhite()

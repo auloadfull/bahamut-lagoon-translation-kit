@@ -120,6 +120,8 @@ namespace unit {
   allocator.create(47, 1,jpNumberTileGuard)
   allocator.create(12, 4,hpRange)
   allocator.create(12, 4,mpRange)
+  allocator.create( 3, 4,enemyHpLabel)
+  allocator.create( 3, 4,enemyMpLabel)
   allocator.create( 3, 4,playerHpLabel)
   allocator.create( 9, 4,playerHpValue)
   allocator.create( 3, 4,playerMpLabel)
@@ -403,6 +405,14 @@ namespace unit {
   function appendEnemyHpInteger4Value {
     cmp.w #1000; bcs render
     append.alignSkip(2)
+    cmp.w #100; bcs render
+    cmp.w #10; bcc render
+    pha
+    dex
+    lda.w #$ff04
+    sta.l render.text,x
+    inx
+    pla
   render:
     append.integer_4()
     rtl
@@ -461,7 +471,7 @@ namespace unit {
       tilemap.setColorGreen()
       ldx #$0000; append.literal("HP:")
       lda #$0003; render.small.bpp2()
-      lda #$0003; allocator.index(hpRange); write.bpp2()
+      lda #$0003; allocator.index(enemyHpLabel); write.bpp2()
       tilemap.setColorWhite()
       ldx #$0000
       lda maximum; tay; lda current
@@ -599,7 +609,7 @@ namespace unit {
       tilemap.setColorGreen()
       ldx #$0000; append.literal("MP:")
       lda #$0003; render.small.bpp2()
-      lda #$0003; allocator.index(mpRange); write.bpp2()
+      lda #$0003; allocator.index(enemyMpLabel); write.bpp2()
       tilemap.setColorWhite()
       ldx #$0000
       lda maximum; tay; lda current

@@ -131,14 +131,21 @@ namespace itemExplanation {
   }
 
   //A => count
-  function countLeft {
-    enter
+  function appendCountText {
     tilemap.setColorWhite()
     and #$00ff
     ldx #$0000
-    cmp.w #100; bcc +; append.literal(" ??"); bra render; +
-    append.literal(" "); append.integer_2()
-  render:
+    cmp.w #100; bcc +; append.literal("??"); rtl; +
+    cmp.w #10; bcs +; append.alignSkip(4); bra ++; +
+    append.alignSkip(2); +
+    append.integer_2()
+    rtl
+  }
+
+  //A => count
+  function countLeft {
+    enter
+    jsl appendCountText
     lda #$0003; render.small.bpp2()
     lda #$0003; jsl information.index.countLeft; write.bpp2()
     leave; rtl
@@ -147,12 +154,7 @@ namespace itemExplanation {
   //A => count
   function countRight {
     enter
-    tilemap.setColorWhite()
-    and #$00ff
-    ldx #$0000
-    cmp.w #100; bcc +; append.literal(" ??"); bra render; +
-    append.literal(" "); append.integer_2()
-  render:
+    jsl appendCountText
     lda #$0003; render.small.bpp2()
     lda #$0003; jsl information.index.countRight; write.bpp2()
     leave; rtl

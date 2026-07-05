@@ -402,8 +402,10 @@ namespace item {
     tilemap.setColorWhite()
     and #$00ff
     ldx #$0000
-    cmp.w #100; bcc +; append.literal(" ??"); bra render; +
-    append.literal(" "); append.integer_2()
+    cmp.w #100; bcc +; append.alignSkip(6); append.literal("??"); bra render; +
+    append.alignSkip(6)
+    cmp.w #10; bcs +; append.alignSkip(2); +
+    append.integer_2()
   render:
     lda #$0003; render.small.bpp2()
     lda #$0003; allocator.index(count); write.bpp2()

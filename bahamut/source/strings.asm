@@ -63,7 +63,7 @@ namespace bpp2 {
   constant( 9,commandCome)
   constant( 9,commandGo)
   constant( 9,commandWait)
-  constant( 3,boss)
+  constant( 4,boss)
   constant( 3,space)
   constant( 7,chapterLabel)
   constant( 4,turnLabel)

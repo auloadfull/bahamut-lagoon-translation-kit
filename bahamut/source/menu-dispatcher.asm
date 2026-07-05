@@ -260,27 +260,36 @@ namespace dispatcher {
       }
 
       information: {
+        lda tilemap.address; sta pageAddress
+
+        //Information menu wants the PAGE label and adjacent frame tiles in the
+        //same sky/cyan as the window frame, but the numeric "1/ 1" portion
+        //stays white.  Render them as two tile runs so palette attributes do
+        //not bleed together.
+        tilemap.setColorGreen()
+        tilemap.write($a0fc)
         ldx #$0000
-        append.alignSkip(9)
+        append.alignSkip(8)
         append.literal("PAGE")
-        {
-          lda tilemap.address; sta pageAddress
-          tilemap.write($a0fc)
-          append.alignLeft()
-          append.alignSkip(44)
-          lda pageIndex; append.integer_2(); append.literal("/")
-          lda pageTotal; append.integer_2()
-          lda #$000a; render.small.bpp2()
-          ldx #$03f4
-          lda render.tiles
-          write.bpp2()
-          phb; ldb #$7e
-          lda pageAddress; add #$0002; tax
-          lda.w #$a0fc; sta.w tilemap.location,x
-          lda #$0001; sta.w tilemap.transfer
-          plb
-          leave; rtl
-        }
+        lda #$0005; render.small.bpp2()
+        ldx #$03f4
+        lda #$0005; write.bpp2()
+
+        phb; ldb #$7e
+        lda pageAddress; add #$0002; tax
+        lda.w #$a8fc; sta.w tilemap.location,x
+        lda #$0001; sta.w tilemap.transfer
+        plb
+
+        tilemap.setColorWhite()
+        ldx #$0000
+        append.alignSkip(4)
+        lda pageIndex; append.integer_2(); append.literal("/")
+        lda pageTotal; append.integer_2()
+        lda #$0005; render.small.bpp2()
+        ldx #$03f9
+        lda #$0005; write.bpp2()
+        leave; rtl
       }
     }
 

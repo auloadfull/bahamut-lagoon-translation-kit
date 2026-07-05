@@ -437,14 +437,18 @@ macro drawWindow(variable priority, variable line, variable topEdge, variable to
   variable(2, height)
 
   namespace border {
-    constant topLeft     = $2000|topEdge
-    constant top         = $2000|topLine
-    constant topRight    = $6000|topEdge
-    constant left        = $0000|line|priority
-    constant right       = $6000|line
-    constant bottomLeft  = $a000|bottomEdge
-    constant bottom      = $a000|bottomLine
-    constant bottomRight = $e000|bottomEdge
+    //Use menu palette group 2 for the original sky/cyan window frame.
+    //Keep the priority behavior of the original constants: top/bottom/right
+    //always have priority, while left follows the caller's priority argument.
+    constant sky         = $0800
+    constant topLeft     = $2000|sky|topEdge
+    constant top         = $2000|sky|topLine
+    constant topRight    = $6000|sky|topEdge
+    constant left        = sky|line|priority
+    constant right       = $6000|sky|line
+    constant bottomLeft  = $a000|sky|bottomEdge
+    constant bottom      = $a000|sky|bottomLine
+    constant bottomRight = $e000|sky|bottomEdge
   }
 
   enter; ldb #$7e

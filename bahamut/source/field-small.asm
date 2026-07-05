@@ -713,13 +713,13 @@ namespace class {
 
   boss:
     ldx #$0000; ldy.w #strings.bpp2.boss
-    lda #$0003; index.bpp2(); write.bpp2(lists.strings.bpp2)
-    txa; sep #$30; ldx.w cursor; dex #3; pha; lda.b #command.paletteIvory
-    sta.w output,x; inx; pla
+    lda #$0004; index.bpp2(); write.bpp2(lists.strings.bpp2)
+    txa; sep #$30; ldx.w cursor; dex #7
     sta.w output,x; inx; inc
     sta.w output,x; inx; inc
-    sta.w output,x; inx; lda.b #command.paletteWhite
-    sta.w output,x; inx; stx.w cursor
+    sta.w output,x; inx; inc
+    sta.w output,x; inx
+    inx #3; stx.w cursor
     leave; rtl
   }
 }
@@ -734,7 +734,7 @@ namespace level {
 
     enter; ldb #$31
     ldx $18; lda $7e0002,x; and #$00ff; ldx #$0000
-    append.alignSkip(2)
+    cmp.w #10; bcs +; append.alignSkip(2); +
     cmp.w #100; bcs unknown; append.integer_2(); bra +
     unknown:; append.literal("^^"); +
     lda #$0002; render.small.bpp2()
