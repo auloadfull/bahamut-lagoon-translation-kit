@@ -105,10 +105,13 @@ namespace party {
 
   allocator.bpp4()
   allocator.create(7, 8,name)
-  allocator.create(4, 8,level)
+  allocator.create(2, 8,levelLabel)
+  allocator.create(2, 8,levelValue)
   allocator.create(8, 8,class)
-  allocator.create(8, 8,hp)
-  allocator.create(6, 8,mp)
+  allocator.create(3, 8,hpLabel)
+  allocator.create(5, 8,hpValue)
+  allocator.create(3, 8,mpLabel)
+  allocator.create(3, 8,mpValue)
   allocator.bpp2()
   allocator.create(8,11,menu)
   allocator.create(5, 2,party)
@@ -342,10 +345,10 @@ namespace party {
     tilemap.setColorGreen()
     ldx #$0000; append.literal("LV")
     lda #$0002; render.small.bpp4()
-    lda #$0002; allocator.index(level); write.bpp4()
+    lda #$0002; allocator.index(levelLabel); write.bpp4()
     tilemap.setColorWhite()
     lda value; and #$00ff; min.w(100); mul(3); inc; tay
-    lda #$0002; allocator.index(level); inx #2; write.bpp4(lists.levelsMagic.bpp4)
+    lda #$0002; allocator.index(levelValue); write.bpp4(lists.levelsMagic.bpp4)
     leave; rtl
   }
 
@@ -374,14 +377,14 @@ namespace party {
       tilemap.setColorGreen()
       ldx #$0000; append.literal("HP:")
       lda #$0003; render.small.bpp4()
-      lda #$0003; allocator.index(hp); write.bpp4()
+      lda #$0003; allocator.index(hpLabel); write.bpp4()
       tilemap.setColorWhite()
       ldx #$0000; lda value
       cmp.w #10000; bcc +; append.literal("????"); bra ++; +
       appendGridInteger4(); +
       append.literal(" ")
       lda #$0005; render.small.bpp4()
-      lda #$0005; allocator.index(hp); inx #3; write.bpp4()
+      lda #$0005; allocator.index(hpValue); write.bpp4()
       leave; rtl
     }
   }
@@ -394,19 +397,27 @@ namespace party {
     setTypeMP:; php; rep #$20; pha; lda #$0000; sta type; pla; plp; rtl
     setTypeSP:; php; rep #$20; pha; lda #$0001; sta type; pla; plp; rtl
 
-    function setValue {
+    function renderLabel {
       enter
-      sta value
       tilemap.setColorGreen()
       ldx #$0000
       lda type
-      cmp #$0000; bne +; append.literal("MP:"); bra label; +
-      cmp #$0001; bne +; append.literal("SP:"); bra label; +
-      leave; rtl
-
-    label:
+      cmp #$0001; beq sp
+    mp:
+      append.literal("MP:")
+      bra render
+    sp:
+      append.literal("SP:")
+    render:
       lda #$0003; render.small.bpp4()
-      lda #$0003; allocator.index(mp); write.bpp4()
+      lda #$0003; allocator.index(mpLabel); write.bpp4()
+      leave; rtl
+    }
+
+    function setValue {
+      enter
+      sta value
+      jsl renderLabel
       tilemap.setColorWhite()
       ldx #$0000; lda value
       cmp #$ffff; bne +; append.literal("---"); bra render; +
@@ -415,24 +426,23 @@ namespace party {
 
     render:
       lda #$0003; render.small.bpp4()
-      lda #$0003; allocator.index(mp); inx #3; write.bpp4()
+      lda #$0003; allocator.index(mpValue); write.bpp4()
       leave; rtl
     }
 
     function setNone {
       enter
-      // USER_KO_TUNING: Near-tuned KO layout moved the unavailable MP/SP dash
-      // two tiles farther right.  JP_BASE keeps the translation-kit baseline
-      // hook offset instead of applying this extra shift.
+      // USER_KO_TUNING: unavailable MP/SP rows use the far-right stat slot,
+      // not the normal MP/SP label origin.  Keep the newly restored "MP:/SP:"
+      // label, but shift the whole unavailable block two tiles right.
       if KO_USER_KO_TUNING {
-        tilemap.incrementAddress(6)
-      } else {
         tilemap.incrementAddress(4)
       }
+      jsl renderLabel
       tilemap.setColorWhite()
       ldx #$0000; append.literal("---")
       lda #$0003; render.small.bpp4()
-      lda #$0003; allocator.index(mp); inx #3; write.bpp4()
+      lda #$0003; allocator.index(mpValue); write.bpp4()
       leave; rtl
     }
   }
