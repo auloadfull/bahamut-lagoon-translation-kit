@@ -37,7 +37,7 @@ namespace character {
     db $52,$53,$54,$55,$56,$57,$58,$59,$5a,$5b,$5c,$5d,$5e,$5f,$35,$36  //a
     db $37,$38,$39,$3a,$3b,$3c,$3d,$3e,$3f,$01,$02,$03,$04,$05,$06,$07  //b
     db $08,$09,$0a,$0b,$0c,$0d,$0e,$0f,$10,$11,$12,$13,$14,$15,$16,$17  //c
-    db $18,$19,$1a,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  //d
+    db $18,$19,$1a,$60,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  //d
     db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  //e
     db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  //f
   }
@@ -50,7 +50,7 @@ namespace character {
     db $89,$8a,$8b,$8c,$8d,$ae,$af,$b0,$b1,$b2,$b3,$b4,$b5,$b6,$b7,$b8  //3
     db $8e,$8f,$90,$91,$92,$93,$94,$95,$96,$97,$98,$99,$9a,$9b,$9c,$9d  //4
     db $9e,$9f,$a0,$a1,$a2,$a3,$a4,$a5,$a6,$a7,$a8,$a9,$aa,$ab,$ac,$ad  //5
-    db $ef,$ef,$ef,$ef,$ef,$ef,$ef,$ef,$ef,$ef,$ef,$ef,$ef,$ef,$ef,$ef  //6
+    db $d3,$ef,$ef,$ef,$ef,$ef,$ef,$ef,$ef,$ef,$ef,$ef,$ef,$ef,$ef,$ef  //6
     db $ef,$ef,$ef,$ef,$ef,$ef,$ef,$ef,$ef,$ef,$ef,$ef,$ef,$ef,$ef,$ef  //7
     db $ef,$ef,$ef,$ef,$ef,$ef,$ef,$ef,$ef,$ef,$ef,$ef,$ef,$ef,$ef,$ef  //8
     db $ef,$ef,$ef,$ef,$ef,$ef,$ef,$ef,$ef,$ef,$ef,$ef,$ef,$ef,$ef,$ef  //9
@@ -151,7 +151,6 @@ map '~', $9c  //en-dash
 map '_', $9d  //en-space
 
 map '%', $9e
-
 map '<', command.styleItalic
 map '>', command.styleNormal
 map '[', command.colorYellow

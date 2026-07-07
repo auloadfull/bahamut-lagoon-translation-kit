@@ -1129,15 +1129,9 @@ namespace item {
     //------
     function setWindowWidth {
       enter
-      lda.w item; and #$00ff; tax
-      lda lists.items.widths,x; and #$00ff
-      sep #$20; pha
-      lda.w itemTotal; cmp.b #10; bcs total_2
-      total_1:; pla; max.b(4); bra store  //9 + 18 => 27 pixels => 4 tiles
-      total_2:; pla; max.b(5); bra store  //9 + 30 => 39 pixels => 5 tiles
-    store:
+      lda #$0009  //JP layout: fixed 9-tile item name slot including icon.
+      sep #$20
       sta.w windowWidth
-      inc.w windowOffset  //move the window one tile to the right (to avoid overlapping the dragon)
       leave; rtl
     }
 
@@ -1160,30 +1154,57 @@ namespace item {
 
       enter
       ldx #$0000; txy
-      append.alignSkip(1)
       lda.w itemTotal; and #$00ff; sta total
-      cmp.w #10; jcs total_2
+      lda count; and #$00ff; cmp.w #10; jcs count_2
+
+      count_1: {
+        // Left count block: right edge fixed at x=24px.
+        append.alignSkip(8)
+        lda count; append.integer1()
+        append.byte($d3)
+        jmp separator
+      }
+
+      count_2: {
+        // Two digits + suffix is 24px, so start at x=0.
+        lda count; append.integer_2()
+        append.byte($d3)
+        jmp separator
+      }
+
+      separator: {
+        // Slash is fixed independently of count/total digit widths.
+        append.alignLeft()
+        append.alignSkip(24)
+        append.literal("/")
+      }
+
+      lda total; cmp.w #10; jcs total_2
 
       total_1: {
-        lda count; append.integer1()
-        append.literal("/")
+        // Right total block: right edge fixed at x=62px.
+        append.alignLeft()
+        append.alignSkip(48)
         lda total; append.integer1()
+        append.byte($d3)
         jmp render
       }
 
       total_2: {
-        lda count; append.integer_2()
-        append.literal("/")
+        // Two digits + suffix is 24px, right edge still fixed at x=62px.
+        append.alignLeft()
+        append.alignSkip(40)
         lda total; append.integer_2()
+        append.byte($d3)
         jmp render
       }
 
       render: {
-        lda #$0004; render.small.bpo4(); render.small.bpo4.to.bpa4()
+        lda #$0008; render.small.bpo4()  //white: do not convert to .bpa4
         index.for8x2(counter)
-        lda #$0004; write.bpp4()
+        lda #$0008; write.bpp4()
         txy; jsl tilemap.calculateIndex; sub #$0008; tax
-        lda #$0004; tilemap.write()
+        lda #$0008; tilemap.write()
         leave; rtl
       }
     }
