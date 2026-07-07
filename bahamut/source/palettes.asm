@@ -60,19 +60,19 @@ namespace menu {
   seek($ee53a4); jsl hook
   seek($ee85d2); {  //add green and ivory text colors
     dw white   //color  1
-    dw gray    //color  2
+    dw black   //color  2  //KO: original menu small-text secondary stroke is black, not gray
     dw black   //color  3
     ds 2       //color  4
     dw shadow  //color  5
-    dw gray    //color  6
+    dw black   //color  6
     dw black   //color  7
     ds 2       //color  8
     dw green   //color  9
-    dw gray    //color 10
+    dw black   //color 10
     dw black   //color 11
     ds 2       //color 12
     dw ivory   //color 13
-    dw gray    //color 14
+    dw black   //color 14
     dw black   //color 15
   }
   dequeue pc

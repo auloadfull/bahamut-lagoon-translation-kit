@@ -197,10 +197,9 @@ namespace saves {
     tilemap.setColorPalette(0)
     ldx #$0000
     append.alignSkip(16)       //TIME label only +1px; timestamp stays fixed below.
-    append.colorYellow()
     append.literal("TIME")
-    append.colorNormal()
     lda #$0006; render.small.bpp4()
+    lda #$0006; render.small.bpp4.to.bph4()
     ldx tileIndex; lda #$0006; write.bpp4()
 
     tilemap.setColorPalette(0)
