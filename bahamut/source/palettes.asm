@@ -4,6 +4,7 @@ constant white   = color(31,31,29)
 constant gray    = color(15,15,15)
 constant black   = color( 2, 2, 2)
 constant yellow  = color(30,30, 2)
+constant combatGold = color(31,24, 0)  //KO: JP battle selected/LVUP text is warmer than pure yellow
 constant shadow  = color(20,20,20)
 constant green   = color(26,31,28)  //KO: sampled original cyan-green candidate 0x73fa
 constant ivory   = color(31,31,15)
@@ -40,17 +41,18 @@ namespace field {
 
 namespace combat {
   enqueue pc
-  seek($c1ca4d); {  //add yellow text color
+  seek($c1ca4d); {  //add battle active text color
     dw white   //color 1
     dw black   //color 2
-    dw yellow  //color 3
+    dw combatGold  //color 3
   }
-  seek($e64b42); {  //convert yellow text color to ivory
+  seek($e64b42); {  //combat active small-text palette
     dw white   //color 1
     dw gray    //color 2
     dw navy    //color 3
     ds 2       //color 4
-    dw ivory   //color 5
+    dw combatGold  //color 5
+    dw black       //color 6
   }
   dequeue pc
 }
