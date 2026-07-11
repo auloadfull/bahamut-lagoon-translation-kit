@@ -844,6 +844,7 @@ namespace enemy {
       sta value
       ldx #$0000
       lda value; cmp.w #1000; bcc +; append.literal("???"); bra render; +
+      append.alignSkip(2)
       append.integer_3()
     render:
       lda #$0003; ldy #$0000; render.small.bpo4()

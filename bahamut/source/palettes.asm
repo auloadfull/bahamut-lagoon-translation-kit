@@ -62,7 +62,7 @@ namespace menu {
   seek($ee53a4); jsl hook
   seek($ee85d2); {  //add green and ivory text colors
     dw white   //color  1
-    dw black   //color  2  //KO: original menu small-text secondary stroke is black, not gray
+    dw gray    //color  2  //KO: item icon mid-tone; KO text shadows use color 3
     dw black   //color  3
     ds 2       //color  4
     dw shadow  //color  5
