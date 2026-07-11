@@ -1123,8 +1123,8 @@ function renderMenuLargeKoGlyph {
 
 function renderMenuLargeKoGlyphLoaded {
   lda.l menu.largeText.character
-  and.w #koFontPage.itemDescription; beq +
-    jml menu.largeText.renderItemDescriptionKoGlyphLoaded
+  and.w #koFontPage.descriptionMask; beq +
+    jml menu.largeText.renderDescriptionKoGlyphLoaded
   +
 
   //calculate first RAM tile write position

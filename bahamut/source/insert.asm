@@ -151,8 +151,8 @@ namespace koTerrainFont {
   insert("fonts/font-ko-terrain", yellow)
 }
 
-namespace koItemDescriptionFont {
-  insert("fonts/font-ko-item-description", normal)
+namespace koDescriptionFont {
+  insert("fonts/font-ko-description", normal)
 }
 
 namespace smallFont {

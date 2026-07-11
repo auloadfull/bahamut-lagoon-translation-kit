@@ -167,8 +167,8 @@ function renderLargeText {
 
   function renderKoGlyphLoaded {
     sta character
-    and.w #koFontPage.itemDescription; beq +
-      jml renderItemDescriptionKoGlyphLoaded
+    and.w #koFontPage.descriptionMask; beq +
+      jml renderDescriptionKoGlyphLoaded
     +
     phx; phy
 

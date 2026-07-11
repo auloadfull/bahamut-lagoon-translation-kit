@@ -236,7 +236,7 @@ namespace options {
   seek($c0c939); lda #$40    //shadow box height
   seek($c0c93f); lda #$50    //shadow box left
   seek($c0c945); lda #$af    //shadow box right
-  seek($c0c908); lda #$4e    //X cursor offset
+  seek($c0c908); lda #$56    //X cursor offset: one tile right of the Near layout
   seek($c0c901); ldy #$4298  //window tilemap position
   dequeue pc
 }
@@ -269,7 +269,7 @@ namespace choice {
     asl; pha                          //multiply by 16-bit tilemap entry size
     lda #$42c0; sub $01,s; tay; pla   //find the tilemap start from the right
     asl #2; sep #$20; pha             //now multiply width by 8x8 tile size
-    lda #$ee; sub $01,s; sta $b7      //compute the cursor position from the right
+    lda #$f6; sub $01,s; sta $b7      //compute the cursor position from the right (+8px)
     lda #$f0; sub $01,s; sta $7e7b1c  //compute the shadow position from the right
     lda #$e7; sta $7e7b1d             //always end the shadow box at the same position
     lda #$28; sta $7e7b0f             //store the shadow box height: always two entries

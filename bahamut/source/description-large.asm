@@ -3,10 +3,10 @@ namespace largeText {
 
 seek(textCursor)
 
-//Render one tagged item-description glyph into the menu OAM text buffer.  This
+//Render one tagged item/technique-description glyph into the menu OAM buffer.
 //is deliberately kept in expanded ROM after the script blob; the normal $f0
 //and $f1 code banks are full and only perform a long jump to this routine.
-function renderItemDescriptionKoGlyphLoaded {
+function renderDescriptionKoGlyphLoaded {
   //calculate first and second RAM tile write positions
   lda pixel; and #$00f8; asl #2; cmp #$0200; bcc +
   add #$0200; +; sta ramAddressL
@@ -24,7 +24,7 @@ function renderItemDescriptionKoGlyphLoaded {
 
   macro lineL(variable n) {
     variable r = n < 6 ? n * 2 : $01fc + (n - 6) * 2
-    lda.l koItemDescriptionFont.normal+$00+n*2,x
+    lda.l koDescriptionFont.normal+$00+n*2,x
     ora.w output+r,y; sta.w output+r,y
   }
   lda ramAddressL; tay
@@ -33,7 +33,7 @@ function renderItemDescriptionKoGlyphLoaded {
 
   macro lineR(variable n) {
     variable r = n < 6 ? n * 2 : $01fc + (n - 6) * 2
-    lda.l koItemDescriptionFont.normal+$18+n*2,x
+    lda.l koDescriptionFont.normal+$18+n*2,x
     ora.w output+r,y; sta.w output+r,y
   }
   lda ramAddressR; tay
@@ -52,17 +52,27 @@ namespace combat {
 seek(textCursor)
 
 //The $f0 code bank has no room for another unrolled 12-line font renderer.
-//Keep the item-description-only renderer in expanded ROM and jump here only
-//when the encoded KO glyph carries koFontPage.itemDescription.
-function renderItemDescriptionKoGlyphLoaded {
+//Keep the description renderer in expanded ROM and jump here only when an
+//encoded KO glyph carries an item or technique description page tag.
+function renderDescriptionKoGlyphLoaded {
   phx; phy
 
-  //The original combat item-description row begins three 12px cells in from
-  //the left.  Apply it only once, before rendering the first tagged glyph;
-  //the party-menu path intentionally keeps its existing position.
-  lda renderLargeText.pixel; bne +
-    lda #$0024; sta renderLargeText.pixel
-  +
+  //Combat descriptions are centered within the detected text-window width.
+  //Y already points past the first tagged glyph, so rewind its three encoded
+  //bytes while measuring the complete line.  The caller's Y is restored from
+  //the stack below; menu descriptions keep their independent layout.
+  lda renderLargeText.pixel; bne centered
+    dey; dey; dey
+    jsl renderLargeText.align.center
+
+    //Descriptions occupy an 18-cell grid.  Exact pixel centering already
+    //gives equal margins; for an odd glyph count, shift left by half a cell
+    //so the unmatched full cell remains on the right (eg. 13 => 2 / 3).
+    //Each tagged glyph is 12px, so bit 2 of the measured width is set only
+    //for an odd number of glyphs.
+    and #$0004; beq centered
+    lda renderLargeText.pixel; sub #$0006; sta renderLargeText.pixel
+  centered:
 
   //source <= shifted page + compact glyph index * 48
   lda renderLargeText.pixel; and #$0004; beq +; lda.w #$3000; bra ++; +; lda.w #$0000; +
@@ -80,9 +90,9 @@ function renderItemDescriptionKoGlyphLoaded {
 +;sta renderLargeText.pixel
 
   macro line(variable n) {
-    lda.l koItemDescriptionFont.normal+$00+n*2,x
+    lda.l koDescriptionFont.normal+$00+n*2,x
     ora.w $0000+n*2,y; sta.w $0000+n*2,y
-    lda.l koItemDescriptionFont.normal+$18+n*2,x
+    lda.l koDescriptionFont.normal+$18+n*2,x
     ora.w $0020+n*2,y; sta.w $0020+n*2,y
   }
   line(0); line(1); line(2);  line(3);  line(4);  line(5)

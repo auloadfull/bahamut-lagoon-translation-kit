@@ -88,7 +88,7 @@ if codeCursor > $f10000 {
 
 codeCursor = $f10000
 include "menu-large.asm"
-include "item-description-large.asm"
+include "description-large.asm"
 include "menu-small.asm"
 include "menu-dispatcher.asm"
 include "menu-saves.asm"
