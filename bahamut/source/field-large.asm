@@ -413,6 +413,10 @@ namespace renderLargeText {
 
   //$fa + u16 => compact KO 12x12 glyph index.
   function renderKoGlyph16 {
+    //The field renderer enters this hook with an 8-bit accumulator.  Every
+    //operation below consumes a 16-bit immediate/value, so running it without
+    //an explicit REP makes the high immediate byte execute as the next opcode.
+    php; rep #$30
     jsl increment
     jsl read
     and #$00ff
@@ -425,6 +429,7 @@ namespace renderLargeText {
     sta $01,s
     jsl increment
     pla
+    plp
     jmp renderKoGlyphLoaded
   }
 
@@ -437,7 +442,9 @@ namespace renderLargeText {
 
   function renderKoGlyphLoaded {
     enter; ldb #$7e
-    and #$00ff; sta character
+    //Keep the high-bit page tag until font selection.  The low byte remains
+    //the compact glyph index used to address either 256-glyph font page.
+    sta character
 
     //drawCursor points at an x,y tile coordinate.
     lda lineNumber; and #$0003; mul(30); pha
@@ -451,13 +458,11 @@ namespace renderLargeText {
 
     //source <= KO font page + character * 48
     lda pixel; and #$0004; beq +; lda.w #$3000; bra ++; +; lda.w #$0000; +
-    pha; lda character; mul(48); add $01,s; tax; pla
+    pha; lda character; and #$00ff; mul(48); add $01,s; tax; pla
 
     lda pixel; add #$000c; cmp pixels; bcc +; beq +
     lda pixels; sta pixel; leave; rtl
   +;sta pixel
-
-    lda color; jne yellow
 
     macro render(variable font) {
       macro line(variable n) {
@@ -469,6 +474,16 @@ namespace renderLargeText {
       leave; rtl
     }
 
+    //Terrain labels carry an explicit flag in their u16 glyph code.  Selecting
+    //the font from the encoded glyph is deterministic and avoids relying on a
+    //caller stack address shared by every field large-text path.
+    lda character; and #$8000; jeq standardFont
+      lda color; jne terrainYellow
+      terrainNormal:; render(koTerrainFont.normal)
+      terrainYellow:; render(koTerrainFont.yellow)
+
+  standardFont:
+    lda color; jne yellow
     normal:; render(koLargeFont.normal)
     yellow:; render(koLargeFont.yellow)
   }

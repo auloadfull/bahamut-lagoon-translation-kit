@@ -68,6 +68,7 @@ build: cli
 	python3 ../../../bahamut/ko/tools/patch_combat_font_ko.py
 	python3 ../../../bahamut/ko/tools/apply_chapter_ko_poc.py
 	out/list-encoder
+	python3 ../../../bahamut/ko/tools/apply_terrain_ko.py
 	python3 ../../../bahamut/ko/tools/collect_glyph_usage.py
 	python3 ../../../bahamut/ko/tools/list_prerenderer.py $(KO_LISTS)
 	python3 ../../../bahamut/ko/tools/list_prerenderer.py --out-dir ../en/binaries/lists $(KO_LISTS)

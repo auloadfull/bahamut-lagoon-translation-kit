@@ -10,11 +10,11 @@ namespace terrain {
   enqueue pc
   seek($c09cb4); jsl renderCoordinates; nop #4
   seek($c09d6e); jsl renderTerrainType; rts
-  seek($c09cc7); ldx #$0082        //terrain type tilemap position
+  seek($c09cc7); ldx #$0102        //JP layout: terrain type on the fourth interior tile row
   seek($c09cdc); jsl tilemapWidth  //terrain type tilemap width
   //in debug mode, the terrain window was increased in height to show the ID.
   //instead of using an entire line, this code folds the ID into the coordinates line.
-  seek($c09c9e); lda #$02  //disable debug mode extra window height
+  seek($c09c9e); lda #$03  //JP layout: fixed height, two tile rows taller than the Near layout
   seek($c09ca5); nop #6    //disable debug mode extra window lines (for ID)
   seek($c09ccd); nop #5    //disable debug mode terrain type relocation (for ID)
   dequeue pc
@@ -23,17 +23,17 @@ namespace terrain {
   constant xCoordinate = $90
   constant yCoordinate = $91
 
-  //A <= minimum number of tiles needed for the window
+  constant windowWidth = 8
+
+  //A <= fixed number of interior tiles used by the original terrain window
   function width {
+    //Keep the existing SRAM allocation stable for save-state compatibility.
     variable(2, coordinatesWidth)
     variable(2, terrainTypeWidth)
 
-    php; rep #$30; phx; phy
-    jsl buildCoordinatesString; render.small.width(); add #$0007; div(8); sta coordinatesWidth
-    jsl buildTerrainTypeString; render.large.width(); add #$0007; div(8); sta terrainTypeWidth
-    //A <= max(coordinatesWidth, terrainTypeWidth)
-    cmp coordinatesWidth; bcs +; lda coordinatesWidth; +
-    rep #$30; ply; plx; plp; rtl
+    php; rep #$20
+    lda.w #windowWidth
+    plp; rtl
   }
 
   //this is a thin wrapper around terrain.width as there wasn't space for a JSL
@@ -46,7 +46,7 @@ namespace terrain {
   }
 
   //Y => tilemap write index
-  //$7e0042 => tilemap base address
+  //$7e0082 => JP layout row 2; row 1 remains blank
   function renderCoordinates {
     variable(2, tiles)
 
@@ -59,7 +59,7 @@ namespace terrain {
     lda tiles; tay; plx
     sep #$20; lda #$30
     loop: {
-      sta $7e0042,x; inc; inx #2
+      sta $7e0082,x; inc; inx #2
       dey; bne loop
     }
     leave; rtl
@@ -103,18 +103,13 @@ namespace terrain {
     plx; plp; rtl
   }
 
-  //return a string in the form: "X:?? Y:??" (and in debug mode, "ID:??")
+  //Return the original fixed-width coordinate form: "X05 Y07".
   function buildCoordinatesString {
     enter
-    ldx #$0000; append.literal("X: ")
-    lda.b xCoordinate; and #$00ff; dec #2; append.integer3()
-    append.literal(" Y: ")
-    lda.b yCoordinate; and #$00ff; dec #2; append.integer3()
-    //if the debugger is not enabled, don't print the ID
-    lda $7e1abe; and #$00ff; bne +
-    leave; rtl
-  +;append.literal(" ID: ")
-    jsl getTerrainDebugID; append.hex02()
+    ldx #$0000; append.literal("X")
+    lda.b xCoordinate; and #$00ff; dec #2; append.integer02()
+    append.literal(" "); append.alignSkip(4); append.literal("Y")
+    lda.b yCoordinate; and #$00ff; dec #2; append.integer02()
     leave; rtl
   }
 

@@ -146,6 +146,11 @@ namespace koLargeFont {
   insert("fonts/font-ko-field", map)
 }
 
+namespace koTerrainFont {
+  insert("fonts/font-ko-terrain", normal)
+  insert("fonts/font-ko-terrain", yellow)
+}
+
 namespace smallFont {
   insert("fonts/font-small", data)
   insert("fonts/font-small", widths)
