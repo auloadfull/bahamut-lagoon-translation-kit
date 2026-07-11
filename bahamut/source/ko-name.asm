@@ -1122,6 +1122,11 @@ function renderMenuLargeKoGlyph {
 }
 
 function renderMenuLargeKoGlyphLoaded {
+  lda.l menu.largeText.character
+  and.w #koFontPage.itemDescription; beq +
+    jml menu.largeText.renderItemDescriptionKoGlyphLoaded
+  +
+
   //calculate first RAM tile write position
   lda.l menu.largeText.pixel; and #$00f8; asl #2; cmp #$0200; bcc +
   add #$0200; +; sta.l menu.largeText.ramAddressL
@@ -1137,8 +1142,6 @@ function renderMenuLargeKoGlyphLoaded {
   lda.l menu.largeText.pixel; add #$000c; cmp.l menu.largeText.pixels; bcc +; beq +
   lda.l menu.largeText.pixels; sta.l menu.largeText.pixel; rtl
 +;sta.l menu.largeText.pixel
-
-  lda.l menu.largeText.color; jne yellowKo
 
   macro tileKo(variable font) {
     macro lineL(variable n) {
@@ -1163,6 +1166,7 @@ function renderMenuLargeKoGlyphLoaded {
     rtl
   }
 
+  lda.l menu.largeText.color; jne yellowKo
   normalKo:; tileKo(koLargeFont.normal)
   yellowKo:; tileKo(koLargeFont.yellow)
 }

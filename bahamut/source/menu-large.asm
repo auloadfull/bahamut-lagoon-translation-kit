@@ -100,7 +100,8 @@ namespace largeText {
     cmp.w #command.alignCenter; bne +; jsl align.center;      bra renderCharacter; +
     cmp.w #command.alignRight;  bne +; jsl align.right;       bra renderCharacter; +
     cmp.w #command.alignSkip;   bne +; jsl align.skip;        bra renderCharacter; +
-    bra renderCharacter
+    cmp.w #command.reserved0;   bne +; jsl koName.renderMenuLargeKoGlyph; jmp renderCharacter; +
+    jmp renderCharacter
   decode:
     //Name-entry default Korean aliases live in $7e9e00 as one-byte proxy
     //syllables.  Handle them only for that exact buffer; Magic/Item

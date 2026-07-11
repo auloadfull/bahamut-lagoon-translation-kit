@@ -166,6 +166,10 @@ function renderLargeText {
   }
 
   function renderKoGlyphLoaded {
+    sta character
+    and.w #koFontPage.itemDescription; beq +
+      jml renderItemDescriptionKoGlyphLoaded
+    +
     phx; phy
 
     //calculate font read position: (pixel & 4 ? shifted-page : base-page) + character * 48
@@ -179,8 +183,6 @@ function renderLargeText {
     lda pixels; sta pixel; ply; plx; rtl
   +;sta pixel
 
-    lda color; jne yellowKo
-
     macro render(variable font) {
       macro line(variable n) {
         lda.l font+$00+n*2,x; ora.w $0000+n*2,y; sta.w $0000+n*2,y
@@ -191,6 +193,7 @@ function renderLargeText {
       ply; plx; rtl
     }
 
+    lda color; jne yellowKo
     normalKo:; render(koLargeFont.normal)
     yellowKo:; render(koLargeFont.yellow)
   }

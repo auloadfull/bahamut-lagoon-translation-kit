@@ -33,6 +33,12 @@ namespace command {
   constant terminal    = $ff
 }
 
+namespace koFontPage {
+  constant indexMask       = $00ff
+  constant itemDescription = $4000
+  constant terrain         = $8000
+}
+
 namespace status {
   namespace ailment {
     constant mask      = $f1  //used bits only
