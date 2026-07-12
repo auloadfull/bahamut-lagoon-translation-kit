@@ -405,8 +405,10 @@ function techniqueUse {
     lda level; and #$00ff
     cmp #$0000; bne +; leave; rtl; +
     cmp #$00ff; bne +; leave; rtl; +
-    append.literal(text, " Lv. ")
-    append.integer3(text)
+    lda.w #field.message.levelLabel
+    append.stringIndexed(text, lists.fieldMessages.text)
+    lda level; and #$00ff
+    append.runtimeInteger5(text, lists.fieldMessages.text, field.message.digit0)
     leave; rtl
   }
 }

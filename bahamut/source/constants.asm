@@ -35,9 +35,11 @@ namespace command {
 
 namespace koFontPage {
   constant indexMask            = $00ff
+  constant rangeDescription     = $1000
   constant techniqueDescription = $2000
+  constant runtimeText          = $3000
   constant itemDescription      = $4000
-  constant descriptionMask      = $6000
+  constant descriptionMask      = $7000
   constant terrain              = $8000
 }
 

@@ -6,6 +6,27 @@ namespace command {
   constant unitDescription = $fa
 }
 
+namespace message {
+  constant enemyUnit       = 0
+  constant dragonUnit      = 1
+  constant npcUnit         = 2
+  constant partyUnit       = 3
+  constant alreadyMoved    = 4
+  constant cannotMove      = 5
+  constant leveledUp       = 6
+  constant gainedPartyExp  = 7
+  constant gainedAllExp    = 8
+  constant buildingRecover = 9
+  constant poisonDamage    = 10
+  constant fireDamage      = 11
+  constant lavaDamage      = 12
+  constant receivedItems   = 13
+  constant receivedPiro    = 14
+  constant unknown         = 15
+  constant levelLabel      = 16
+  constant digit0          = 17
+}
+
 namespace triggers {
   enqueue pc
   seek($c05f85); jsl main; rts
@@ -40,6 +61,7 @@ namespace triggers {
 
 namespace unitDescription {
   enqueue pc
+  seek($c0a9ff); db $14  //retain the verified original OAM cursor position
   seek($c0ab2d); jsl tilemap
   seek($c0ab4b); jsl render; rts
   dequeue pc
@@ -50,36 +72,47 @@ namespace unitDescription {
   //[$c0ed0f] "パーティーユニットです。"
   //[$c0ed1c] "こうどうずみユニットです。"
   function render {
+    variable(2, messageIndex)
+
     enter
     and #$00ff; ldx #$0620
     cmp #$00c0; bne noMatch  //text should always be in bank $c0
-    cpy #$ecea; bne +; ldy.w #enemyUnit-strings;    bra write; +
-    cpy #$ecf6; bne +; ldy.w #dragonUnit-strings;   bra write; +
-    cpy #$ed03; bne +; ldy.w #npcUnit-strings;      bra write; +
-    cpy #$ed0f; bne +; ldy.w #partyUnit-strings;    bra write; +
-    cpy #$ed1c; bne +; ldy.w #alreadyMoved-strings; bra write; +
-    cpy #$eed6; bne +; ldy.w #cannotMove-strings;   bra write; +
-    noMatch:; ldy.w #unknown-strings
+    cpy #$ecea; bne +; lda.w #message.enemyUnit;    bra write; +
+    cpy #$ecf6; bne +; lda.w #message.dragonUnit;   bra write; +
+    cpy #$ed03; bne +; lda.w #message.npcUnit;      bra write; +
+    cpy #$ed0f; bne +; lda.w #message.partyUnit;    bra write; +
+    cpy #$ed1c; bne +; lda.w #message.alreadyMoved; bra write; +
+    cpy #$eed6; bne +; lda.w #message.cannotMove;   bra write; +
+    noMatch:; lda.w #$0006  //fieldUnitMessages unknown entry
 
   write:
+    sta messageIndex
+    //Carry the selected width with the custom command itself. The tilemap
+    //hook can run after other field code has reused $08, so reading $08 back
+    //there is unsafe (zero underflows the tile loop to $ffff iterations).
+    phx
+    tax
+    lda.l lists.fieldUnitMessages.widths,x; and #$00ff; inc; tay
+    plx
     sep #$20
     lda.b #command.unitDescription; sta $00,x; inx
+    tya; sta $00,x; inx; sta $08
     lda.b #command.terminal; sta $00,x
 
-    //this forces the window text length to 192px (to match all other 1-line dialogue text boxes)
-    sep #$20; lda.b #24; sta $08  //24 tiles @ 8x8/tile => 192px
+    //The encoded value reserves one tile after the text for the continue
+    //cursor; the original field routine centers this width. No leading padding
+    //is added, matching the compact Japanese unit-description windows.
 
-    //transfer the string to render
-    phk; plb
-    ldx #$0000; append.string(strings)  //source specified to use Y index
-    lda #$18; render.large.bpp4()
-
+    //Transfer one fixed 25-tile row: 24 text tiles and one shared blank tile.
+    //The source blob is bank-contained by insert.asm, so a 16-bit pointer
+    //table is safe for DMA and avoids the crashing multi-byte text parser.
     vsync()
-    ldb #$00; rep #$20
+    ldb #$00; rep #$30
     lda #$6000; lsr; sta $2116
-    lda.w #render.buffer >>  0; sta $4302
-    lda.w #render.buffer >> 16; sta $4304
-    lda #$0600; sta $4305
+    lda messageIndex; asl; tax
+    lda.l sources,x; sta $4302
+    lda.w #lists.fieldUnitMessages.bpo4 >> 16; sta $4304
+    lda #$0320; sta $4305  //25 tiles * 32 bytes
     sep #$20
     lda #$80; sta $2115
     lda #$01; sta $4300
@@ -87,14 +120,14 @@ namespace unitDescription {
     lda #$01; sta $420b
     leave; rtl
 
-    strings: {
-      enemyUnit:;    db "This is an enemy unit.",$ff
-      dragonUnit:;   db "This is a dragon unit.",$ff
-      npcUnit:;      db "This is an NPC unit.",$ff
-      partyUnit:;    db "This is a party unit.",$ff
-      alreadyMoved:; db "This unit has already moved.",$ff
-      cannotMove:;   db "This unit cannot move.",$ff
-      unknown:;      db "???",$ff
+    sources: {
+      dw lists.fieldUnitMessages.bpo4 + 0 * 25 * 32
+      dw lists.fieldUnitMessages.bpo4 + 1 * 25 * 32
+      dw lists.fieldUnitMessages.bpo4 + 2 * 25 * 32
+      dw lists.fieldUnitMessages.bpo4 + 3 * 25 * 32
+      dw lists.fieldUnitMessages.bpo4 + 4 * 25 * 32
+      dw lists.fieldUnitMessages.bpo4 + 5 * 25 * 32
+      dw lists.fieldUnitMessages.bpo4 + 6 * 25 * 32
     }
   }
 
@@ -102,13 +135,17 @@ namespace unitDescription {
     lda output,x; cmp.b #command.unitDescription; beq +; rtl; +
 
     php; rep #$30; pha; phx; phy
-    lda #$0018; tax  //string length in tiles
-    lda #$2300       //tile attributes
-  -;sta $0000,y; inc
-    sta $0040,y; inc
+    lda output+1,x; and #$00ff
+    clamp.w(2,24); dec; tax  //bounded encoded width minus cursor tile
+    lda #$2300                       //sequential 8x8 text tiles
+  -;pha
+    lda #$2318; sta $0000,y          //upper row: shared blank tile #24
+    pla; sta $0040,y; inc             //lower row: message text
     iny #2; dex; bne -
+    lda #$2318                        //cursor cell starts blank on both rows
+    sta $0000,y; sta $0040,y
   +;ply; plx; pla; plp
-    inx; jmp tilemap  //skip past the control code and load another byte
+    inx #2; jmp tilemap  //skip command + encoded width
   }
 }
 
@@ -159,7 +196,8 @@ namespace leveledUp {
   function main {
     enter; ldx #$0000
     and #$00ff; append.name(output)
-    append.literal(output, " leveled up.")
+    lda.w #message.leveledUp
+    append.stringIndexed(output, lists.fieldMessages.text)
     leave; rtl
   }
 }
@@ -205,7 +243,10 @@ namespace techniqueLarge {
     lda.b name; and #$00ff
     append.stringIndexed(output, lists.techniques.text)
     lda.w stop; and #$00ff; beq +; leave; rtl; +
-    lda.b level; and #$00ff; append.literal(output, " Lv."); append.integer_2(output)
+    lda.w #message.levelLabel
+    append.stringIndexed(output, lists.fieldMessages.text)
+    lda.b level; and #$00ff
+    append.runtimeInteger5(output, lists.fieldMessages.text, message.digit0)
     lda.l plus; and #$00ff; beq +; append.literal(output, " +"); append.integer1(output); +
     lda.l debugging; and #$00ff; beq +; leave; rtl; +
     lda.b times; and #$00ff; beq +; append.literal(output, " *"); append.integer1(output); +
@@ -237,10 +278,10 @@ namespace gainedExperience {
     constant experience = $18fc
 
     enter; ldx #$0000
+    lda.w #message.gainedPartyExp
+    append.stringIndexed(output, lists.fieldMessages.text)
     lda.w experience
-    append.literal(output, "Gained ")
-    lda.w experience; append.integer5(output)
-    append.literal(output, " experience.")
+    append.runtimeInteger5(output, lists.fieldMessages.text, message.digit0)
     leave; rtl
   }
 }
@@ -255,9 +296,11 @@ namespace everyoneGainedExperience {
   //A => experience
   function main {
     enter; ldx #$0000
-    append.literal(output, "Everyone gained ")
-    append.integer5(output)
-    append.literal(output, " experience.")
+    pha
+    lda.w #message.gainedAllExp
+    append.stringIndexed(output, lists.fieldMessages.text)
+    pla
+    append.runtimeInteger5(output, lists.fieldMessages.text, message.digit0)
     leave; rtl
   }
 }
@@ -270,7 +313,8 @@ namespace buildingRecovery {
 
   function main {
     enter; ldx #$0000
-    append.literal(output, "Recovered HP from building.")
+    lda.w #message.buildingRecover
+    append.stringIndexed(output, lists.fieldMessages.text)
     leave; rtl
   }
 }
@@ -289,7 +333,8 @@ namespace poisonDamage {
   //------
   function main {
     enter; ldx #$0000
-    append.literal(output, "Took poison damage.")
+    lda.w #message.poisonDamage
+    append.stringIndexed(output, lists.fieldMessages.text)
     leave
     pea $8b5d
     jml $c08b90
@@ -310,7 +355,8 @@ namespace fireDamage {
   //------
   function main {
     enter; ldx #$0000
-    append.literal(output, "Took fire damage.")
+    lda.w #message.fireDamage
+    append.stringIndexed(output, lists.fieldMessages.text)
     leave
     pea $8b70
     jml $c08b90
@@ -331,7 +377,8 @@ namespace lavaDamage {
   //------
   function main {
     enter; ldx #$0000
-    append.literal(output, "Took lava damage.")
+    lda.w #message.lavaDamage
+    append.stringIndexed(output, lists.fieldMessages.text)
     leave
     pea $8b83
     jml $c08b90
@@ -471,7 +518,8 @@ namespace receivedItems {
   //A => item quantity
   function main {
     enter; ldx #$0000
-    append.literal(output, "Received item drop.")
+    lda.w #message.receivedItems
+    append.stringIndexed(output, lists.fieldMessages.text)
     leave
     pea $61db    //fake jsr $8b8b from $c061d9
     jml $c08b90  //but also skip over Japanese text copy of $8b8b subroutine
@@ -493,7 +541,8 @@ namespace receivedPiro {
   //------
   function main {
     enter; ldx #$0000
-    append.literal(output, "Received piro.")
+    lda.w #message.receivedPiro
+    append.stringIndexed(output, lists.fieldMessages.text)
     leave
     pea $61c8
     jml $c08b90

@@ -153,6 +153,7 @@ namespace koTerrainFont {
 
 namespace koDescriptionFont {
   insert("fonts/font-ko-description", normal)
+  insert("fonts/font-ko-description", yellow)
 }
 
 namespace smallFont {
@@ -245,6 +246,15 @@ namespace defeats {
 
 namespace descriptions {
   insert("lists/descriptions", text)
+}
+
+namespace fieldMessages {
+  insert("lists/fieldMessages", text)
+}
+
+namespace fieldUnitMessages {
+  insert("lists/fieldUnitMessages", bpo4)
+  insert("lists/fieldUnitMessages", widths)
 }
 
 namespace dragons {

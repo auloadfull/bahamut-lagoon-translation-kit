@@ -218,6 +218,30 @@ namespace append {
   macro mpRange  (target) {; append.emitter1(mpRange);   }
   macro spValue  (target) {; append.emitter1(spValue);   }
   macro spRange  (target) {; append.emitter1(spRange);   }
+
+  //Append a variable-width integer using tagged 12x12 runtime glyph entries.
+  //The source table must contain ten consecutive entries for digits 0-9.
+  //A => integer
+  //X => target index
+  macro runtimeInteger5(variable target, variable source, variable digit0) {
+    php; rep #$30; phb; phy
+    jsl emit.integer5
+    //emit.integer5.output is allocated in SRAM bank $31.  Combat and field
+    //callers do not guarantee DB=$31; reading it through the caller's DB can
+    //miss the $ff terminator and loop forever.
+    ldb #emit.integer5.output >> 16
+    ldy #$0000
+    loop{#}: {
+      lda.w emit.integer5.output,y; and #$00ff
+      cmp.w #command.terminal; beq done{#}
+      sub.w #'0'; add.w #digit0
+      append.stringIndexed(target, source)
+      iny
+      bra loop{#}
+    }
+    done{#}:
+    ply; plb; plp
+  }
 }
 
 namespace emit {

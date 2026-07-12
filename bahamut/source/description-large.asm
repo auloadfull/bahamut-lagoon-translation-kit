@@ -1,3 +1,56 @@
+namespace render {
+namespace large {
+
+seek(textCursor)
+
+//Render one tagged 12x12 field-message glyph for render.large.bpp4().  Keep
+//the unrolled copy in expanded ROM because the legacy renderer's $f0 bank is
+//already full.  Carry reports clipping so the caller can finish the row.
+function bpp4KoGlyph {
+  php; rep #$30; phx; phy
+
+  lda.w bpp4.index; tax
+  lda.w render.text,x; and #$00ff; sta.w bpp4.character; inx
+  lda.w render.text,x; and #$00ff; xba; add.w bpp4.character
+  sta.w bpp4.character; inx
+  txa; sta.w bpp4.index
+
+  //source <= shifted shared-runtime page + compact glyph index * 48
+  lda.w bpp4.pixel; and #$0004; beq +; lda.w #$3000; bra ++; +; lda.w #$0000; +
+  pha; lda.w bpp4.character; and.w #koFontPage.indexMask
+  mul(48); add $01,s; tax; pla
+
+  //Each horizontal tile column occupies 64 bytes in the temporary layout.
+  lda.w bpp4.pixel; and #$00f8; asl #3; tay
+
+  lda.w bpp4.pixel; add #$000c; cmp.w bpp4.pixels; bcc +; beq +
+  lda.w bpp4.pixels; sta.w bpp4.pixel
+  ply; plx; plp; sec; rtl
++;sta.w bpp4.pixel
+
+  macro upper(variable n) {
+    lda.l koDescriptionFont.normal+$00+n*2,x
+    ora.w $6004+n*2,y; sta.w $6004+n*2,y
+    lda.l koDescriptionFont.normal+$18+n*2,x
+    ora.w $6044+n*2,y; sta.w $6044+n*2,y
+  }
+  macro lower(variable n) {
+    lda.l koDescriptionFont.normal+$0c+n*2,x
+    ora.w $6020+n*2,y; sta.w $6020+n*2,y
+    lda.l koDescriptionFont.normal+$24+n*2,x
+    ora.w $6060+n*2,y; sta.w $6060+n*2,y
+  }
+  upper(0); upper(1); upper(2); upper(3); upper(4); upper(5)
+  lower(0); lower(1); lower(2); lower(3); lower(4); lower(5)
+
+  ply; plx; plp; clc; rtl
+}
+
+textCursor = pc()
+
+}
+}
+
 namespace menu {
 namespace largeText {
 
@@ -89,6 +142,36 @@ function renderDescriptionKoGlyphLoaded {
   ply; plx; rtl
 +;sta renderLargeText.pixel
 
+  macro render(variable font) {
+    macro line(variable n) {
+      lda.l font+$00+n*2,x
+      ora.w $0000+n*2,y; sta.w $0000+n*2,y
+      lda.l font+$18+n*2,x
+      ora.w $0020+n*2,y; sta.w $0020+n*2,y
+    }
+    line(0); line(1); line(2);  line(3);  line(4);  line(5)
+    line(6); line(7); line(8);  line(9);  line(10); line(11)
+    ply; plx; rtl
+  }
+
+  lda renderLargeText.color; jne yellow
+  normal:; render(koDescriptionFont.normal)
+  yellow:; render(koDescriptionFont.yellow)
+}
+
+textCursor = pc()
+
+}
+
+namespace field {
+
+seek(textCursor)
+
+//Field range descriptions arrive here after field.renderLargeText has already
+//computed the shifted source index in X and the WRAM destination in Y.  Finish
+//the existing enter/leave frame in expanded ROM to keep bank $f0 below its
+//hard limit.
+function renderDescriptionKoGlyphLoaded {
   macro line(variable n) {
     lda.l koDescriptionFont.normal+$00+n*2,x
     ora.w $0000+n*2,y; sta.w $0000+n*2,y
@@ -97,7 +180,7 @@ function renderDescriptionKoGlyphLoaded {
   }
   line(0); line(1); line(2);  line(3);  line(4);  line(5)
   line(6); line(7); line(8);  line(9);  line(10); line(11)
-  ply; plx; rtl
+  leave; rtl
 }
 
 textCursor = pc()

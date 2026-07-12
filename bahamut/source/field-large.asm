@@ -474,9 +474,13 @@ namespace renderLargeText {
       leave; rtl
     }
 
-    //Terrain labels carry an explicit flag in their u16 glyph code.  Selecting
-    //the font from the encoded glyph is deterministic and avoids relying on a
-    //caller stack address shared by every field large-text path.
+    //Description glyphs use an expanded-ROM renderer because bank $f0 has no
+    //room for another unrolled 12-line font copy.
+    lda character; and.w #koFontPage.descriptionMask; beq +
+      jml field.renderDescriptionKoGlyphLoaded
+    +
+
+    //Terrain labels keep their isolated normal/yellow pages here.
     lda character; and #$8000; jeq standardFont
       lda color; jne terrainYellow
       terrainNormal:; render(koTerrainFont.normal)
@@ -539,7 +543,7 @@ namespace windowMaskFixes {
   dequeue pc
 
   function hook {
-    dec; sta $7e7b1b; rtl
+    dec #3; sta $7e7b1b; rtl  //shared edge follows the actual centered tile width
   }
 }
 

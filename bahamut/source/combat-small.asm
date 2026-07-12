@@ -942,7 +942,7 @@ namespace technique {
   enqueue pc
   seek($c12f09); jml hook; nop
   seek($c13e2c); jsl details; jmp $3e45
-  seek($c13de1); lda #$0f    //window width
+  seek($c13de1); lda #$0e    //KO: match the JP technique window width (one tile narrower)
   seek($c13e23); nop #3      //disable 'Lv.' marker
   seek($c13e76); ldy #$000e  //# of tiles to gray when MP/SP is too low to use a technique
   dequeue pc
@@ -1020,7 +1020,7 @@ namespace technique {
     lda #$0003; render.small.bpo4()
     index.for3x16R(counterCost)
     lda #$0003; write.bpp4()
-    txy; lda costIndex; add #$0002; tax
+    txy; lda costIndex; tax  //KO: follow the one-tile-narrower JP window
     lda #$0003; tilemap.write()
 
     //this is needed so that subsequent lines start at the beginning of the line.

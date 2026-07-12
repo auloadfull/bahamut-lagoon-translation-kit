@@ -159,6 +159,9 @@ function bpp4 {
     cmp.w #command.alignCenter; bne +; jsl align.center;      bra renderCharacter; +
     cmp.w #command.alignRight;  bne +; jsl align.right;       bra renderCharacter; +
     cmp.w #command.alignSkip;   bne +; jsl align.skip;        bra renderCharacter; +
+    cmp.w #command.reserved0;   bne +
+      jsl render.large.bpp4KoGlyph; jcs epilogue; bra renderCharacter
+    +
     cmp.w #command.break;       jcs epilogue
     bra renderCharacter
   decode:
