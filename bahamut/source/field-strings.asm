@@ -25,6 +25,12 @@ namespace message {
   constant unknown         = 15
   constant levelLabel      = 16
   constant digit0          = 17
+  constant temporarySaveQuestion = 27
+  constant temporarySaveCreated  = 28
+  constant endPhaseQuestion      = 29
+  constant scenarioLabel         = 30
+  constant turnLabel             = 31
+  constant attackEnemyQuestion   = 32
 }
 
 namespace triggers {
@@ -160,6 +166,9 @@ namespace scenarioTurn {
   seek($c0a0a9); jsl main; rts
   dequeue pc
 
+  codeCursor = pc()
+  seek(textCursor)
+
   //------
   //c0a0a9  lda $7e3bd8  ;load chapter#
   //c0a0ad  cmp #$1c     ;see if it's a side quest
@@ -179,10 +188,24 @@ namespace scenarioTurn {
     constant turn    = $7e3bd6
 
     enter; ldx #$0000
-    lda.l chapter; and #$00ff; append.stringIndexed(output, lists.chapters.text)
-    lda.l turn; beq +; append.literal(output, ", Turn "); append.integer5(output); +
+    lda.w #message.scenarioLabel
+    append.stringIndexed(output, lists.fieldMessages.text)
+    lda.l chapter; and #$00ff
+    append.runtimeInteger5(output, lists.fieldMessages.text, message.digit0)
+    lda.l turn; bne turnNonZero
+    jmp done
+  turnNonZero:
+    pha
+    lda.w #message.turnLabel
+    append.stringIndexed(output, lists.fieldMessages.text)
+    pla
+    append.runtimeInteger5(output, lists.fieldMessages.text, message.digit0)
+  done:
     leave; rtl
   }
+
+  textCursor = pc()
+  seek(codeCursor)
 }
 
 //[$c0edef] "はレベルアップ。"
@@ -194,10 +217,22 @@ namespace leveledUp {
 
   //A => name
   function main {
+    variable(2, nameIndex)
+
     enter; ldx #$0000
-    and #$00ff; append.name(output)
+    and #$00ff; sta nameIndex
+    jsl koName.appendFieldLargeNameAlias
+    bcs +
+    lda nameIndex
+    append.name(field.renderLargeText.text)
+  +
     lda.w #message.leveledUp
-    append.stringIndexed(output, lists.fieldMessages.text)
+    append.stringIndexed(field.renderLargeText.text, lists.fieldMessages.text)
+    lda.w #$0000; sta.l field.renderLargeText.index
+    sep #$20
+    lda.b #command.redirect; sta.l output+0
+    lda.b #command.terminal; sta.l output+1
+    rep #$20
     leave; rtl
   }
 }
@@ -450,11 +485,18 @@ namespace attackEnemy {
   seek($c09c2c); jsl main; nop #4
   dequeue pc
 
+  codeCursor = pc()
+  seek(textCursor)
+
   function main {
     enter; ldx #$0000
-    append.literal(output, "Engage this party in battle?")
+    lda.w #message.attackEnemyQuestion
+    append.stringIndexed(output, lists.fieldMessages.text)
     leave; rtl
   }
+
+  textCursor = pc()
+  seek(codeCursor)
 }
 
 //[$c0eee4] "ゲームをセーブしますか？"
@@ -465,7 +507,8 @@ namespace createTemporarySave {
 
   function main {
     enter; ldx #$0000
-    append.literal(output, "Create a temporary save?")
+    lda.w #message.temporarySaveQuestion
+    append.stringIndexed(output, lists.fieldMessages.text)
     leave; rtl
   }
 }
@@ -478,7 +521,8 @@ namespace createdTemporarySave {
 
   function main {
     enter; ldx #$0000
-    append.literal(output, "A temporary save was created.")
+    lda.w #message.temporarySaveCreated
+    append.stringIndexed(output, lists.fieldMessages.text)
     leave; rtl
   }
 }
@@ -491,7 +535,8 @@ namespace endPlayerPhase {
 
   function main {
     enter; ldx #$0000
-    append.literal(output, "End player phase?")
+    lda.w #message.endPhaseQuestion
+    append.stringIndexed(output, lists.fieldMessages.text)
     leave; rtl
   }
 }

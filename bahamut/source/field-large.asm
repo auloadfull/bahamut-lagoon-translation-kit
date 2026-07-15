@@ -134,6 +134,7 @@ namespace renderLargeText {
     sta index
     loop: {
       jsl read
+      cmp.w #command.reserved0; bne +; jsl koGlyph16; bra loop; +
       cmp.w #command.reserved1; bne +; jsl koGlyph;  bra loop; +
       cmp.w #command.name;     bne +; jsl name;     bra loop; +
       cmp.w #command.redirect; bne +; jsl redirect; bra loop; +
@@ -166,6 +167,16 @@ namespace renderLargeText {
 
     function koGlyph {
       sta text,x; inx
+      jsl read; sta text,x; inx
+      rtl
+    }
+
+    //Preserve a compact 16-bit KO glyph command atomically.  Without this,
+    //a low glyph index in the $f4/$f5/$fb range is mistaken for a nested
+    //name/redirect/field-glyph command while decoding level-up strings.
+    function koGlyph16 {
+      sta text,x; inx
+      jsl read; sta text,x; inx
       jsl read; sta text,x; inx
       rtl
     }

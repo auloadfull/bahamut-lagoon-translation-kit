@@ -840,21 +840,34 @@ namespace enemy {
 
     function write {
       variable(2, value)
+      variable(2, tiles)
 
       sta value
       ldx #$0000
-      lda value; cmp.w #1000; bcc +; append.literal("???"); bra render; +
+      lda value; cmp.w #10000; bcs unknownValue
+      cmp.w #1000; bcs integer4
+      cmp.w #100; bcs integer3
       append.alignSkip(2)
+    integer3:
       append.integer_3()
+      lda #$0003; bra render
+    integer4:
+      append.integer_4()
+      lda #$0004; bra render
+    unknownValue:
+      append.literal("????")
+      lda #$0004
     render:
-      lda #$0003; ldy #$0000; render.small.bpo4()
+      sta tiles
+      ldy #$0000; render.small.bpo4()
       index.for9x16(counter)
-      lda #$0003; write.bpp4()
+      lda tiles; write.bpp4()
       txy; jsl tilemap.calculateIndex; sub #$0004; tax
       tilemap.write($000d)
       tilemap.write($000e)
-      inx #2  // KO: keep one 8px blank tile between "HP" and the value.
-      lda #$0003; tilemap.write()
+      lda tiles; cmp #$0004; beq +
+      inx #2  // KO: keep one 8px blank tile between "HP" and 3-tile values.
+    +;lda tiles; tilemap.write()
       rtl
     }
   }
@@ -923,16 +936,20 @@ namespace combatMenu {
 
     loop: {
       lda index; tax
-      lda $0940,x; and #$00ff
-      ldx #$0000; append.technique()
-      render.small.width(); add #$0007; div(8); inc  //+1 to account for the menu cursor
+      //Technique text now uses compact 12x12 glyph commands for field/combat
+      //announcements.  The command menu itself is still the pre-rendered 8x8
+      //list, so use its generated tile width instead of decoding that text as
+      //a small-font string.
+      lda $0940,x; and #$00ff; tax
+      lda.l lists.techniques.widths,x; and #$00ff; inc  //+1 for menu cursor
       cmp width; bcc +; sta width; +
       lda index; inc; sta index
       cmp count; jcc loop
     }
 
-    lda width; min.w(7); sta width  // KO: keep command windows one tile tighter for Korean commands
-    sep #$20; lda width; sta.w windowWidth
+    lda width; min.w(7); sta width  // KO: keep command text/cursor anchor at the measured width.
+    add #$0002; min.w(9)            // KO: extend only the right border by two tiles.
+    sep #$20; sta.w windowWidth
     lda.w windowOffset; add #$07; sub width; sta.w windowOffset
     leave; rtl
   }

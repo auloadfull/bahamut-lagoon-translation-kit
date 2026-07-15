@@ -39,6 +39,9 @@ namespace koFontPage {
   constant techniqueDescription = $2000
   constant runtimeText          = $3000
   constant itemDescription      = $4000
+  constant chapterTitle         = $5000
+  constant techniqueName        = $6000
+  constant itemName             = $7000
   constant descriptionMask      = $7000
   constant terrain              = $8000
 }

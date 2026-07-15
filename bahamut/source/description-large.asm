@@ -15,7 +15,7 @@ function bpp4KoGlyph {
   sta.w bpp4.character; inx
   txa; sta.w bpp4.index
 
-  //source <= shifted shared-runtime page + compact glyph index * 48
+  //source <= shifted runtime-text page + compact glyph index * 48
   lda.w bpp4.pixel; and #$0004; beq +; lda.w #$3000; bra ++; +; lda.w #$0000; +
   pha; lda.w bpp4.character; and.w #koFontPage.indexMask
   mul(48); add $01,s; tax; pla
@@ -29,15 +29,15 @@ function bpp4KoGlyph {
 +;sta.w bpp4.pixel
 
   macro upper(variable n) {
-    lda.l koDescriptionFont.normal+$00+n*2,x
+    lda.l koRuntimeTextFont.normal+$00+n*2,x
     ora.w $6004+n*2,y; sta.w $6004+n*2,y
-    lda.l koDescriptionFont.normal+$18+n*2,x
+    lda.l koRuntimeTextFont.normal+$18+n*2,x
     ora.w $6044+n*2,y; sta.w $6044+n*2,y
   }
   macro lower(variable n) {
-    lda.l koDescriptionFont.normal+$0c+n*2,x
+    lda.l koRuntimeTextFont.normal+$0c+n*2,x
     ora.w $6020+n*2,y; sta.w $6020+n*2,y
-    lda.l koDescriptionFont.normal+$24+n*2,x
+    lda.l koRuntimeTextFont.normal+$24+n*2,x
     ora.w $6060+n*2,y; sta.w $6060+n*2,y
   }
   upper(0); upper(1); upper(2); upper(3); upper(4); upper(5)
@@ -56,7 +56,7 @@ namespace largeText {
 
 seek(textCursor)
 
-//Render one tagged item/technique-description glyph into the menu OAM buffer.
+//Render one tagged description/runtime/name glyph into the menu OAM buffer.
 //is deliberately kept in expanded ROM after the script blob; the normal $f0
 //and $f1 code banks are full and only perform a long jump to this routine.
 function renderDescriptionKoGlyphLoaded {
@@ -75,24 +75,35 @@ function renderDescriptionKoGlyphLoaded {
   lda pixels; sta pixel; rtl
 +;sta pixel
 
-  macro lineL(variable n) {
-    variable r = n < 6 ? n * 2 : $01fc + (n - 6) * 2
-    lda.l koDescriptionFont.normal+$00+n*2,x
-    ora.w output+r,y; sta.w output+r,y
-  }
-  lda ramAddressL; tay
-  lineL(0); lineL(1); lineL(2);  lineL(3);  lineL(4);  lineL(5)
-  lineL(6); lineL(7); lineL(8);  lineL(9);  lineL(10); lineL(11)
+  macro render(variable font) {
+    macro lineL(variable n) {
+      variable r = n < 6 ? n * 2 : $01fc + (n - 6) * 2
+      lda.l font+$00+n*2,x
+      ora.w output+r,y; sta.w output+r,y
+    }
+    lda ramAddressL; tay
+    lineL(0); lineL(1); lineL(2);  lineL(3);  lineL(4);  lineL(5)
+    lineL(6); lineL(7); lineL(8);  lineL(9);  lineL(10); lineL(11)
 
-  macro lineR(variable n) {
-    variable r = n < 6 ? n * 2 : $01fc + (n - 6) * 2
-    lda.l koDescriptionFont.normal+$18+n*2,x
-    ora.w output+r,y; sta.w output+r,y
+    macro lineR(variable n) {
+      variable r = n < 6 ? n * 2 : $01fc + (n - 6) * 2
+      lda.l font+$18+n*2,x
+      ora.w output+r,y; sta.w output+r,y
+    }
+    lda ramAddressR; tay
+    lineR(0); lineR(1); lineR(2);  lineR(3);  lineR(4);  lineR(5)
+    lineR(6); lineR(7); lineR(8);  lineR(9);  lineR(10); lineR(11)
+    rtl
   }
-  lda ramAddressR; tay
-  lineR(0); lineR(1); lineR(2);  lineR(3);  lineR(4);  lineR(5)
-  lineR(6); lineR(7); lineR(8);  lineR(9);  lineR(10); lineR(11)
-  rtl
+
+  lda character; and.w #koFontPage.descriptionMask
+  cmp.w #koFontPage.runtimeText; jeq runtimeText
+  cmp.w #koFontPage.techniqueName; jeq technique
+  cmp.w #koFontPage.itemName; jeq itemName
+  shared:; render(koDescriptionFont.normal)
+  runtimeText:; render(koRuntimeTextFont.normal)
+  technique:; render(koTechniqueNameFont.normal)
+  itemName:; render(koItemNameFont.normal)
 }
 
 textCursor = pc()
@@ -154,9 +165,31 @@ function renderDescriptionKoGlyphLoaded {
     ply; plx; rtl
   }
 
-  lda renderLargeText.color; jne yellow
-  normal:; render(koDescriptionFont.normal)
-  yellow:; render(koDescriptionFont.yellow)
+  //Technique names need more than the shared description page can hold.
+  //Keep their compact index space isolated and choose the font from the page
+  //tag before applying the existing normal/yellow combat color.
+  lda renderLargeText.character; and.w #koFontPage.descriptionMask
+  cmp.w #koFontPage.runtimeText; jeq runtimeText
+  cmp.w #koFontPage.techniqueName; jeq technique
+  cmp.w #koFontPage.itemName; jeq itemName
+  lda renderLargeText.color; jne descriptionYellow
+  descriptionNormal:; render(koDescriptionFont.normal)
+  descriptionYellow:; render(koDescriptionFont.yellow)
+
+runtimeText:
+  lda renderLargeText.color; jne runtimeTextYellow
+  runtimeTextNormal:; render(koRuntimeTextFont.normal)
+  runtimeTextYellow:; render(koRuntimeTextFont.yellow)
+
+technique:
+  lda renderLargeText.color; jne techniqueYellow
+  techniqueNormal:; render(koTechniqueNameFont.normal)
+  techniqueYellow:; render(koTechniqueNameFont.yellow)
+
+itemName:
+  lda renderLargeText.color; jne itemNameYellow
+  itemNameNormal:; render(koItemNameFont.normal)
+  itemNameYellow:; render(koItemNameFont.yellow)
 }
 
 textCursor = pc()
@@ -172,15 +205,26 @@ seek(textCursor)
 //the existing enter/leave frame in expanded ROM to keep bank $f0 below its
 //hard limit.
 function renderDescriptionKoGlyphLoaded {
-  macro line(variable n) {
-    lda.l koDescriptionFont.normal+$00+n*2,x
-    ora.w $0000+n*2,y; sta.w $0000+n*2,y
-    lda.l koDescriptionFont.normal+$18+n*2,x
-    ora.w $0020+n*2,y; sta.w $0020+n*2,y
+  macro render(variable font) {
+    macro line(variable n) {
+      lda.l font+$00+n*2,x
+      ora.w $0000+n*2,y; sta.w $0000+n*2,y
+      lda.l font+$18+n*2,x
+      ora.w $0020+n*2,y; sta.w $0020+n*2,y
+    }
+    line(0); line(1); line(2);  line(3);  line(4);  line(5)
+    line(6); line(7); line(8);  line(9);  line(10); line(11)
+    leave; rtl
   }
-  line(0); line(1); line(2);  line(3);  line(4);  line(5)
-  line(6); line(7); line(8);  line(9);  line(10); line(11)
-  leave; rtl
+
+  lda field.renderLargeText.character; and.w #koFontPage.descriptionMask
+  cmp.w #koFontPage.runtimeText; jeq runtimeText
+  cmp.w #koFontPage.techniqueName; jeq technique
+  cmp.w #koFontPage.itemName; jeq itemName
+  shared:; render(koDescriptionFont.normal)
+  runtimeText:; render(koRuntimeTextFont.normal)
+  technique:; render(koTechniqueNameFont.normal)
+  itemName:; render(koItemNameFont.normal)
 }
 
 textCursor = pc()

@@ -156,6 +156,21 @@ namespace koDescriptionFont {
   insert("fonts/font-ko-description", yellow)
 }
 
+namespace koRuntimeTextFont {
+  insert("fonts/font-ko-runtime-text", normal)
+  insert("fonts/font-ko-runtime-text", yellow)
+}
+
+namespace koTechniqueNameFont {
+  insert("fonts/font-ko-technique-name", normal)
+  insert("fonts/font-ko-technique-name", yellow)
+}
+
+namespace koItemNameFont {
+  insert("fonts/font-ko-item-name", normal)
+  insert("fonts/font-ko-item-name", yellow)
+}
+
 namespace smallFont {
   insert("fonts/font-small", data)
   insert("fonts/font-small", widths)

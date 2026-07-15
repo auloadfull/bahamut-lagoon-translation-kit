@@ -625,7 +625,9 @@ namespace emit {
 
   //A => player or dragon name index
   function name {
-    variable(16, output)
+    //KO static names use three bytes per 12x12 glyph.  Reserve enough room
+    //for the longest six-syllable name plus the terminal byte.
+    variable(32, output)
 
     enter
     and #$00ff; cmp #$000a; bcs static

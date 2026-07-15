@@ -5,7 +5,12 @@ seek(codeCursor)
 namespace largeText {
   enqueue pc
   seek($ee53fc); jsl description; jmp $5409   //descriptions
-  seek($ee5532); jsl chapterName; jmp $553f   //chapter names
+  //The original chapter-name loop examines the first source byte before it
+  //calls the shared renderer.  A tagged KO title starts with command.reserved0,
+  //so that loop consumed the first glyph command and displayed only the second
+  //syllable (eg. "시동" became "동").  Render the complete tagged string here,
+  //then continue at the original DMA setup once the buffer is complete.
+  seek($ee5532); jsl chapterName; jsl main; jmp $55bb; nop #2  //chapter names
   seek($ee51f2); jsl main; nop #15            //text renderer for both description types
   seek($ee540b); jsl test; nop #2             //test if OAM text should be cleared during list navigation
   seek($ee9317); jml cancelStatus; nop #2     //clear OAM text when cancelling list navigation
