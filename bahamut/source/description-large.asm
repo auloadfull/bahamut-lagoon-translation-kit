@@ -106,6 +106,23 @@ function renderDescriptionKoGlyphLoaded {
   itemName:; render(koItemNameFont.normal)
 }
 
+//The original chapter-name engine derives its DMA/sprite counts from the
+//character count in $12 (JP titles are one byte per character, ten max).
+//KO rendering advances $12 by three bytes per glyph, which overruns the
+//engine's per-character position table and clips longer titles. Recompute
+//$12 from the rendered pixel width before resuming the original code
+//(every KO title glyph is a fixed 12px cell).
+function chapterNameFinish {
+  php; rep #$30; pha; phx
+  lda pixel
+  ldx #$0000
+-;cmp #$000c; bcc +
+  sub #$000c; inx; bra -
++;txa; sta $12
+  plx; pla; plp
+  jml $ee55bb
+}
+
 textCursor = pc()
 
 }

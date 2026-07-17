@@ -1,33 +1,33 @@
 
-Fine, you can HAVE the damn ship!{pause:80}{wait}
-It's all up to you now... Gräuel...{pause:80}{wait}
-My work here... is done...{pause:80}{wait}
-Heh... I'm done buying them time now!{pause:80}{wait}
+「……이런　배는　가져가라！{pause:80}{wait}
+「그로이엘……뒤를　부탁한다……{pause:80}{wait}
+「……이걸로　일은　끝……이다{pause:80}{wait}
+「훗……시간　벌기는　여기까지다！{pause:80}{wait}
 
-Hmph! I... I'll give you my supplies!{pause:80}{wait}
-My... My Campbell...{pause:80}{wait}
-Ack!{pause:80}{wait}
-Eeee hee hee hee! Not quite good enough!{pause:80}{wait}
-Eeee hee hee hee! I'll get you for this!{pause:80}{wait}
-The Divine Dragons!?{pause:80}{wait}
-Argh! My role in this is over!{pause:80}{wait}
-But the night belongs to me... Why!?{pause:80}{wait}
-With... this... I must vanish...{pause:80}{wait}
-So fierce, the power of the Divine Dragons...{pause:80}{wait}
-Our homeland... We only wanted to...{pause:80}{wait}
-Go back now... Divine Dragons...{pause:80}{wait}
-Come... to Altair...{pause:80}{wait}
-G'huh huh! I AM a persistent one!{pause:80}{wait}
-Is this the end of the Granvelos Empire...?{pause:80}{wait}
-Thank... you...{pause:80}{wait}
-Not quite! I still have my castle!{pause:80}{wait}
-The empire... was supposed to be mine...{pause:80}{wait}
-Did you make it back...?{pause:80}{wait}
-Defeat... Alexander...{pause:80}{wait}
-Graaaaargggh...{pause:80}{wait}
-Grooooargggh...
+「흥！　보、보급고쯤　가져가라！{pause:80}{wait}
+「오、이몸의　캠벨이………{pause:80}{wait}
+「크악！{pause:80}{wait}
+「이히히히！　아직　멀었어！{pause:80}{wait}
+「이히히히！　갚아　주겠어！{pause:80}{wait}
+『……신룡？！{pause:80}{wait}
+「크윽！　내　차례는　끝입니다！{pause:80}{wait}
+「밤은　내　것인데……왜！？{pause:80}{wait}
+『이……이걸로……사라질　수……{pause:80}{wait}
+「신룡의　힘……무서운　힘이다……{pause:80}{wait}
+『우리……고향으로……{pause:80}{wait}
+『신룡들이여……돌아와라……{pause:80}{wait}
+『알타일로……오너라……{pause:80}{wait}
+「그후후！　나는　끈질기다！{pause:80}{wait}
+「……그랑벨로스　제국도　끝인가……{pause:80}{wait}
+『……감사……한다……{pause:80}{wait}
+「아직이다！　내게는　성이　있다！{pause:80}{wait}
+「제국……내　것이　될　터였는데……{pause:80}{wait}
+『……돌아온　것인가？{pause:80}{wait}
+『알렉산더……쓰러뜨려다오……{pause:80}{wait}
+『그가가가가가가……{pause:80}{wait}
+『그고고고고……{pause:80}{wait}
 
 
-I lost to you...{pause:80}{wait}
-What...!? I lost!?{pause:80}{wait}
+「져　버렸다……{pause:80}{wait}
+『…………？！　졌다고……！？{pause:80}{wait}
 

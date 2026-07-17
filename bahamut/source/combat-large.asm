@@ -172,9 +172,10 @@ function renderLargeText {
     +
     phx; phy
 
-    //calculate font read position: (pixel & 4 ? shifted-page : base-page) + character * 48
+    //calculate font read position inside the selected sub-blob:
+    //(pixel & 4 ? shifted-page : base-page) + (character & $ff) * 48
     lda pixel; and #$0004; beq +; lda.w #$3000; bra ++; +; lda.w #$0000; +
-    pha; lda character; mul(48); add $01,s; tax; pla
+    pha; lda character; and #$00ff; mul(48); add $01,s; tax; pla
 
     //calculate RAM write position: wramBuffer + pixel / 8 * 32
     lda pixel; and #$00f8; asl #2; add.w #wramBuffer; tay
@@ -183,19 +184,9 @@ function renderLargeText {
     lda pixels; sta pixel; ply; plx; rtl
   +;sta pixel
 
-    macro render(variable font) {
-      macro line(variable n) {
-        lda.l font+$00+n*2,x; ora.w $0000+n*2,y; sta.w $0000+n*2,y
-        lda.l font+$18+n*2,x; ora.w $0020+n*2,y; sta.w $0020+n*2,y
-      }
-      line(0); line(1); line(2);  line(3);  line(4);  line(5)
-      line(6); line(7); line(8);  line(9);  line(10); line(11)
-      ply; plx; rtl
-    }
-
-    lda color; jne yellowKo
-    normalKo:; render(koLargeFont.normal)
-    yellowKo:; render(koLargeFont.yellow)
+    //sub-blob dispatch and the unrolled copies live in expanded ROM;
+    //bank $f0 has no room for eight render instances.
+    jml renderKoGlyphTail
   }
 
   function redirect {
@@ -439,23 +430,24 @@ function dragonEvolved {
   //c1a1c6  sta $7ec101    ;store the type into the template string
   //------
   //A => dragon type
+  //KO: "[종족](으)로 진화했다"
   function main {
     variable(2, type)
-    variable(64, string)
 
     enter; ldx #$0000; append.redirect(target)
     and #$00ff; sta type
-    ldx #$0000; append.stringIndexed(string, lists.dragons.text)
     ldx #$0000; append.byte(text, command.alignCenter)
-    append.literal(text, "Evolved into a")
-    lda string; and #$00ff
-    cmp.w #'A'; bne +; append.literal(text, "n"); +
-    cmp.w #'E'; bne +; append.literal(text, "n"); +
-    cmp.w #'I'; bne +; append.literal(text, "n"); +
-    cmp.w #'O'; bne +; append.literal(text, "n"); +
-    cmp.w #'U'; bne +; append.literal(text, "n"); +
-    append.literal(text, " ")
     lda type; append.stringIndexed(text, lists.dragons.text)
+    //조사 선택: 1 = 받침(ㄹ 제외) → 으로, 0/2 → 로
+    phx; lda type; tax; lda.l lists.dragons.particles,x; plx; and #$00ff
+    cmp #$0001; bne +
+    append.koGlyph(text, $0075)  //으
+  +;append.koGlyph(text, $0018)  //로
+    append.koGlyph(text, $0000)  //
+    append.koGlyph(text, $0104)  //진
+    append.koGlyph(text, $00af)  //화
+    append.koGlyph(text, $008b)  //했
+    append.koGlyph(text, $0025)  //다
     leave; rtl
   }
 }
@@ -482,27 +474,65 @@ function dragonTransformed {
   //c1c0b2  sta $7ec101    ;store the type into the template string
   //------
   //A => dragon type
+  //JP: "{dragon}になった" → KO: "[종족]이/가 되었다"
   function main {
     variable(2, type)
-    variable(64, string)
 
     enter; ldx #$0000; append.redirect(target)
     and #$00ff; sta type
-    ldx #$0000; append.stringIndexed(string, lists.dragons.text)
     ldx #$0000; append.byte(text, command.alignCenter)
-    append.literal(text, "Became a")
-    lda string; and #$00ff
-    cmp.w #'A'; bne +; append.literal(text, "n"); +
-    cmp.w #'E'; bne +; append.literal(text, "n"); +
-    cmp.w #'I'; bne +; append.literal(text, "n"); +
-    cmp.w #'O'; bne +; append.literal(text, "n"); +
-    cmp.w #'U'; bne +; append.literal(text, "n"); +
-    append.literal(text, " ")
     lda type; append.stringIndexed(text, lists.dragons.text)
+    //조사 선택: 받침 유무는 빌드 시 생성한 종족별 테이블에서 읽는다
+    phx; lda type; tax; lda.l lists.dragons.particles,x; plx; and #$00ff
+    beq +
+    append.koGlyph(text, $0016)  //이
+    bra ++
+  +;append.koGlyph(text, $001c)  //가
+  +;append.koGlyph(text, $0000)  //
+    append.koGlyph(text, $010d)  //되
+    append.koGlyph(text, $00c0)  //었
+    append.koGlyph(text, $0025)  //다
     leave; rtl
   }
 }
 
 codeCursor = pc()
+
+seek(textCursor)
+
+//Copy one 12x12 KO glyph from the sub-blob selected by compact index bits
+//8-9. Entered via jml from renderLargeText.renderKoGlyphLoaded with X =
+//in-blob offset and Y = WRAM target already computed; ply/plx/rtl matches
+//the stub's stack discipline and returns to the original caller.
+function renderKoGlyphTail {
+  macro render(variable font) {
+    macro line(variable n) {
+      lda.l font+$00+n*2,x; ora.w $0000+n*2,y; sta.w $0000+n*2,y
+      lda.l font+$18+n*2,x; ora.w $0020+n*2,y; sta.w $0020+n*2,y
+    }
+    line(0); line(1); line(2);  line(3);  line(4);  line(5)
+    line(6); line(7); line(8);  line(9);  line(10); line(11)
+    ply; plx; rtl
+  }
+
+  lda renderLargeText.character; and #$0300
+  cmp #$0100; jeq sub1
+  cmp #$0200; jeq sub2
+  cmp #$0300; jeq sub3
+  sub0:; lda renderLargeText.color; jne yellow0
+    normal0:; render(koLargeFont.sub0.normal)
+    yellow0:; render(koLargeFont.sub0.yellow)
+  sub1:; lda renderLargeText.color; jne yellow1
+    normal1:; render(koLargeFont.sub1.normal)
+    yellow1:; render(koLargeFont.sub1.yellow)
+  sub2:; lda renderLargeText.color; jne yellow2
+    normal2:; render(koLargeFont.sub2.normal)
+    yellow2:; render(koLargeFont.sub2.yellow)
+  sub3:; lda renderLargeText.color; jne yellow3
+    normal3:; render(koLargeFont.sub3.normal)
+    yellow3:; render(koLargeFont.sub3.yellow)
+}
+
+textCursor = pc()
 
 }

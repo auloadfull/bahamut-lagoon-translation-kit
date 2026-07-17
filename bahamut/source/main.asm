@@ -86,6 +86,8 @@ if codeCursor > $f10000 {
   error "code bank $f0 exhausted"
 }
 
+variable codeCursorF0 = codeCursor  //captured for the free-space report only
+
 codeCursor = $f10000
 include "menu-large.asm"
 include "description-large.asm"
@@ -120,3 +122,44 @@ while index < 48 {
   copy $008000 + index * $10000, $408000 + index * $10000, $8000
   index = index + 1
 }
+
+//build-time free-space report; print-only, never alters ROM output.
+//code/text/sram cursors plus every insert() asset bank in insert.asm.
+variable reportF0Free = $f10000 - codeCursorF0
+variable reportF1Free = $f20000 - codeCursor
+variable reportTextFree = $f70000 - textCursor
+variable reportSramFree = $318000 - sramCursor
+variable reportScriptFree = $7e0000 - script.tail
+print "[free-space] code $f0: free ", reportF0Free, " / 65536 bytes\n"
+print "[free-space] code $f1: free ", reportF1Free, " / 65536 bytes\n"
+print "[free-space] text $f2-$f6: free ", reportTextFree, " / 327680 bytes\n"
+print "[free-space] script $70-$7d: free ", reportScriptFree, " / 917504 bytes\n"
+print "[free-space] sram $31: free ", reportSramFree, " / 8192 bytes\n"
+variable reportIndex = 0
+variable reportBase = 0
+variable reportBound = 0
+variable reportFree = 0
+variable reportFree32 = 0
+variable reportFree64 = 0
+variable reportLargest = 0
+while reportIndex < 57 {
+  if reportIndex < 48 {
+    reportBase = $400000 + reportIndex * $10000
+    reportBound = reportBase + $8000
+  } else {
+    reportBase = $f70000 + (reportIndex - 48) * $10000
+    reportBound = reportBase + $10000
+  }
+  reportFree = reportBound - cursors[reportIndex]
+  if reportIndex < 48 {
+    reportFree32 = reportFree32 + reportFree
+  } else {
+    reportFree64 = reportFree64 + reportFree
+  }
+  if reportFree > reportLargest {
+    reportLargest = reportFree
+  }
+  print "[free-space] asset bank ", reportIndex, " ($", hex:reportBase, "): free ", reportFree, " bytes\n"
+  reportIndex = reportIndex + 1
+}
+print "[free-space] asset banks total: 32K-class ", reportFree32, " bytes, 64K-class ", reportFree64, " bytes, largest contiguous ", reportLargest, " bytes\n"

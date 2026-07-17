@@ -1,5 +1,5 @@
-[{Yoyo}:] Stop it!
-I'll do it! I'll try to speak with the Divine Dragon!
-[{Yoyo}:] Aaaah!
-[Sauthar:] ...
-[Sauthar:] So this is the Divine Dragons' power...
+{Yoyo}「그만해！
+「해볼게！　신룡과　말해볼게！
+{Yoyo}「꺅！！
+사우저「……。
+「……이것이　신룡의　힘……。

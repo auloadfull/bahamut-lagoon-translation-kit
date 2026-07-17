@@ -15,7 +15,8 @@ function enable {
   lda address+2; asl #6
   ora address+1; sta address+1
   lda address+2; lsr #2
-  add #$f2; sta address+2  //redirected text always resides at $f2-f7:0000-ffff
+  add #$70; sta address+2  //redirected script text resides at $70-$7d:0000-ffff
+                           //(otherwise unused ExHiROM second-chip banks; $7e+ is WRAM)
   lda #$01; sta enabled+0; dec; sta enabled+1
 
   pla; plp; rtl

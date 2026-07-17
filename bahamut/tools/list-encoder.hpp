@@ -230,6 +230,12 @@ auto ListEncoder::toSmall(string suffix, array_view<u8> palette, u32 characters,
           u8 tile = read.argument.hex();
           read.setCharacter(tile, 0x00, FontEncoder::width(tile), 0);
         }
+        if(read.command == "ko") {
+          //Korean list sources are re-rendered by list_prerenderer.py right
+          //after this pass; emit a blank fixed-width cell so encoding proceeds.
+          x += 8;
+          continue;
+        }
         if(read.isCommand()) {
           error("invalid command: {", read.command, "}");
         }
@@ -432,6 +438,15 @@ auto ListEncoder::toText(string suffix, u32 width, string category, string name)
         }
         if(read.command == "wait") {
           text.append(Command::Wait);
+          continue;
+        }
+        if(read.command == "ko") {
+          //compact KO 12x12 glyph; same 3-byte command the script encoder emits
+          u32 glyph = read.argument.hex();
+          text.append(Command::Reserved0);
+          text.append(glyph >> 0 & 0xff);
+          text.append(glyph >> 8 & 0xff);
+          x += 12;
           continue;
         }
         if(auto index = TextEncoder::name(read.command)) {

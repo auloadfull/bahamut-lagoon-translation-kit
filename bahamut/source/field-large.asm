@@ -498,9 +498,9 @@ namespace renderLargeText {
       terrainYellow:; render(koTerrainFont.yellow)
 
   standardFont:
-    lda color; jne yellow
-    normal:; render(koLargeFont.normal)
-    yellow:; render(koLargeFont.yellow)
+    //sub-blob dispatch and the unrolled copies live in expanded ROM;
+    //bank $f0 has no room for eight render instances.
+    jml renderKoGlyphTail
   }
 
   //this function converts rendered tiledata from 2bpp (at $7e:d000+) to 4bpp (at $7e:e000+)
@@ -559,5 +559,43 @@ namespace windowMaskFixes {
 }
 
 codeCursor = pc()
+
+seek(textCursor)
+
+namespace renderLargeText {
+  //Copy one 12x12 KO glyph from the sub-blob selected by compact index bits
+  //8-9. Entered via jml from renderKoGlyphLoaded with X = in-blob offset and
+  //Y = WRAM target already computed; leave/rtl unwinds the original enter.
+  function renderKoGlyphTail {
+    macro render(variable font) {
+      macro line(variable n) {
+        lda.l font+$00+n*2,x; ora.w $0000+n*2,y; sta.w $0000+n*2,y
+        lda.l font+$18+n*2,x; ora.w $0020+n*2,y; sta.w $0020+n*2,y
+      }
+      line(0); line(1); line(2);  line(3);  line(4);  line(5)
+      line(6); line(7); line(8);  line(9);  line(10); line(11)
+      leave; rtl
+    }
+
+    lda character; and #$0300
+    cmp #$0100; jeq sub1
+    cmp #$0200; jeq sub2
+    cmp #$0300; jeq sub3
+    sub0:; lda color; jne yellow0
+      normal0:; render(koLargeFont.sub0.normal)
+      yellow0:; render(koLargeFont.sub0.yellow)
+    sub1:; lda color; jne yellow1
+      normal1:; render(koLargeFont.sub1.normal)
+      yellow1:; render(koLargeFont.sub1.yellow)
+    sub2:; lda color; jne yellow2
+      normal2:; render(koLargeFont.sub2.normal)
+      yellow2:; render(koLargeFont.sub2.yellow)
+    sub3:; lda color; jne yellow3
+      normal3:; render(koLargeFont.sub3.normal)
+      yellow3:; render(koLargeFont.sub3.yellow)
+  }
+}
+
+textCursor = pc()
 
 }

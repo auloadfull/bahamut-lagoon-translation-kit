@@ -63,6 +63,23 @@ namespace append {
   }
 
   //X => target index
+  //Append one compact KO 12x12 glyph command ($fa lo hi), keeping the
+  //append.* convention of leaving X on a terminal byte. Glyph indices come
+  //from ko-large-glyphs.tsv; syllables hardcoded in ASM must be pinned via
+  //COMBAT_ACTION_LARGE_GLYPHS in apply_chapter_ko_poc.py.
+  macro koGlyph(variable target, variable glyph) {
+    php; sep #$20; pha
+    lda.b #command.reserved0; sta.l target,x; inx
+    lda.b #glyph >> 0;        sta.l target,x; inx
+    lda.b #glyph >> 8;        sta.l target,x; inx
+    lda.b #command.terminal;  sta.l target,x
+    pla; plp
+  }
+  macro koGlyph(variable glyph) {
+    append.koGlyph(render.text, glyph)
+  }
+
+  //X => target index
   macro alignLeft(variable target) {
     append.byte(target, command.alignLeft)
   }

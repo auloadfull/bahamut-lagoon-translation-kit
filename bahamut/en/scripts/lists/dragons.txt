@@ -1,60 +1,60 @@
-Puppy
-Red Dragon
-White Dragon
-Gemurah
-Uji
-Black Munimuni
-Baby Hydra
-Dragoncloud
-Bullmander
-White Ropross
-Poisonian
-Muscle Ropross
-Iron Dragon
-Powergator
-Irongater
-Poisonwing
-Tarantulae
-Earth Dragon
-White Warrior
-Poison Warrior
-Devoahan
-Aspidochedon
-White Molten
-Platinum Molten
-Debonair Green
-Iron Warrior
-Earth Slayer
-Green Slayer
-Earth Warrior
-Gargoyle
-Pontilac
-General
-Gigas
-Iron Eagle
-Grand Dragon
-Gladiator
-Glorious
-Crusader
-Uniuni
-Black Dragon
-Unknown
-Lonely Dragon
-Power Eagle
-Blue Ropross
-Behemoth
-Phoenix
-Saint Weapon
-Dhorme Chimera
-Raiden
-Lost Gigantes
-Odin
-Lexus
-Effex
-Black Buster
-Chimera Black
-Helmut
-Beelzebub
-Black Dragon
-Hidon
-Master Dragon
+파피
+레드드래곤
+화이트드래곤
+게무라
+우지
+블랙무니무니
+쁘띠히드라
+드래곤클라우드
+불만더
+화이트로프로스
+포이즈니안
+머슬로프로스
+아이언드래곤
+파워게이터
+아이언게이터
+포이즌윙
+타란튤레이
+어스드래곤
+화이트워리어
+포이즌워리어
+데보아한
+아스피도케돈
+화이트몰튼
+플래티넘몰튼
+데보네아그린
+아이언워리어
+어스슬레이어
+그린슬레이어
+어스워리어
+가고일
+폰티락
+제너럴
+기가스
+아이언이글
+그랜드드래곤
+글래디에이터
+글로리어스
+크루세이더
+우니우니
+블랙드래곤
+정체불명
+외로운드래곤
+파워이글
+블루로프로스
+베히모스
+피닉스
+세인트웨폰
+돌름키마이라
+라이덴
+라스트기가스
+오딘
+렉서스
+에펙스
+블랙버스터
+블랙키마이라
+헬무트
+벨제부브
+흑룡기사
+히든
+마스터드래곤

@@ -204,17 +204,31 @@ namespace renderLargeText {
     lda.w lineNumber; mul(1024); pha
     lda pixel; and #$00f8; asl #2; add $01,s; tay; pla
 
-    //select the font read location:
-    //X <= (pixel & 4 ? shifted-page : base-page) + character * 48
+    //select the font read location inside the selected sub-blob:
+    //X <= (pixel & 4 ? shifted-page : base-page) + (character & $ff) * 48
     lda pixel; and #$0004; beq +; lda.w #$3000; bra ++; +; lda.w #$0000; +
-    pha; lda character; mul(48); add $01,s; tax; pla
+    pha; lda character; and #$00ff; mul(48); add $01,s; tax; pla
 
     lda pixel; add #$000c; cmp pixels; bcc +; beq +
     lda pixels; sta pixel; ply; rtl
   +;sta pixel
 
-    lda color; jne yellow
+    //sub-blob dispatch and the unrolled copies live in expanded ROM;
+    //bank $f0 has no room for eight render instances.
+    jml renderKoGlyphTail
+  }
+}
 
+codeCursor = pc()
+
+seek(textCursor)
+
+namespace renderLargeText {
+  //Copy one 12x12 KO glyph from the sub-blob selected by compact index bits
+  //8-9. Entered via jml from renderKoGlyph with X = in-blob offset and
+  //Y = WRAM tile offset already computed; rtl returns to renderKoGlyph's
+  //original caller.
+  function renderKoGlyphTail {
     macro render(variable font) {
       macro line(variable n) {
         lda.l font+$00+n*2,x; ora.w wramBuffer+$00+n*2,y; sta.w wramBuffer+$00+n*2,y
@@ -225,11 +239,25 @@ namespace renderLargeText {
       ply; rtl
     }
 
-    normal:; render(koLargeFont.normal)
-    yellow:; render(koLargeFont.yellow)
+    lda character; and #$0300
+    cmp #$0100; jeq sub1
+    cmp #$0200; jeq sub2
+    cmp #$0300; jeq sub3
+    sub0:; lda color; jne yellow0
+      normal0:; render(koLargeFont.sub0.normal)
+      yellow0:; render(koLargeFont.sub0.yellow)
+    sub1:; lda color; jne yellow1
+      normal1:; render(koLargeFont.sub1.normal)
+      yellow1:; render(koLargeFont.sub1.yellow)
+    sub2:; lda color; jne yellow2
+      normal2:; render(koLargeFont.sub2.normal)
+      yellow2:; render(koLargeFont.sub2.yellow)
+    sub3:; lda color; jne yellow3
+      normal3:; render(koLargeFont.sub3.normal)
+      yellow3:; render(koLargeFont.sub3.yellow)
   }
 }
 
-codeCursor = pc()
+textCursor = pc()
 
 }

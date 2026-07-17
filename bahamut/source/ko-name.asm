@@ -1135,9 +1135,10 @@ function renderMenuLargeKoGlyphLoaded {
   lda.l menu.largeText.pixel; add #$0008; and #$00f8; asl #2; cmp #$0200; bcc +
   add #$0200; +; sta.l menu.largeText.ramAddressR
 
-  //select one of the two generated KO large shift pages (0px or 4px)
+  //select one of the two generated KO large shift pages (0px or 4px);
+  //name-entry glyphs are asserted into sub-blob 0 at build time
   lda.l menu.largeText.pixel; and #$0004; beq +; lda.w #$3000; bra ++; +; lda.w #$0000; +
-  pha; lda.l menu.largeText.character; mul(48); add $01,s; tax; pla
+  pha; lda.l menu.largeText.character; and #$00ff; mul(48); add $01,s; tax; pla
 
   lda.l menu.largeText.pixel; add #$000c; cmp.l menu.largeText.pixels; bcc +; beq +
   lda.l menu.largeText.pixels; sta.l menu.largeText.pixel; rtl
@@ -1167,8 +1168,8 @@ function renderMenuLargeKoGlyphLoaded {
   }
 
   lda.l menu.largeText.color; jne yellowKo
-  normalKo:; tileKo(koLargeFont.normal)
-  yellowKo:; tileKo(koLargeFont.yellow)
+  normalKo:; tileKo(koLargeFont.sub0.normal)
+  yellowKo:; tileKo(koLargeFont.sub0.yellow)
 }
 
 
@@ -1317,6 +1318,7 @@ largeNameDefaults:
   dw $bdff,$0b0b,$6c35,$6383  //6 Twinhead
   dw $f0ff,$7876,$951d,$3da4  //7 Muni-Muni
   dw $ffff,$3a4f,$d3a6,$5f6c  //8 Puppy
+  dw $2ef7,$9a9c,$8631,$11b9  //9 Fahrenheit
 
 function isDefaultDynamicName {
   php
@@ -1324,7 +1326,7 @@ function isDefaultDynamicName {
   phx
 
   and #$00ff
-  cmp #$0009
+  cmp #$000a
   bcc +
   jmp noAlias
 +;mul(8)
@@ -1464,6 +1466,17 @@ chapterCase8:
   appendLargeGlyphToChapter($00f7)  //피
   jmp aliasDone
 chapterNext8:
+  cmp #$0009
+  beq chapterCase9
+  jmp chapterNext9
+chapterCase9:
+  appendLargeGlyphToChapter($00d4)  //파
+  appendLargeGlyphToChapter($00f8)  //렌
+  appendLargeGlyphToChapter($0011)  //하
+  appendLargeGlyphToChapter($0016)  //이
+  appendLargeGlyphToChapter($0013)  //트
+  jmp aliasDone
+chapterNext9:
   jmp noAlias
 
 aliasDone:
@@ -1568,6 +1581,17 @@ fieldCase8:
   appendLargeGlyphToField($00f7)  //피
   jmp aliasDone
 fieldNext8:
+  cmp #$0009
+  beq fieldCase9
+  jmp fieldNext9
+fieldCase9:
+  appendLargeGlyphToField($00d4)  //파
+  appendLargeGlyphToField($00f8)  //렌
+  appendLargeGlyphToField($0011)  //하
+  appendLargeGlyphToField($0016)  //이
+  appendLargeGlyphToField($0013)  //트
+  jmp aliasDone
+fieldNext9:
   jmp noAlias
 
 aliasDone:
@@ -1699,6 +1723,20 @@ renderTextCase8:
   rep #$20
   jmp aliasDone
 renderTextNext8:
+  cmp #$0009
+  beq renderTextCase9
+  jmp renderTextNext9
+renderTextCase9:
+  appendLargeGlyphToRenderText($00d4)  //파
+  appendLargeGlyphToRenderText($00f8)  //렌
+  appendLargeGlyphToRenderText($0011)  //하
+  appendLargeGlyphToRenderText($0016)  //이
+  appendLargeGlyphToRenderText($0013)  //트
+  sep #$20
+  lda.b #command.terminal; sta.l render.text,x; inx
+  rep #$20
+  jmp aliasDone
+renderTextNext9:
   jmp noAlias
 
 aliasDone:
