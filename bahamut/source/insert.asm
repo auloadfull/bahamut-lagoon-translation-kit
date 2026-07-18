@@ -203,6 +203,10 @@ namespace menuFont {
   insert("fonts/font-menu", data)
 }
 
+namespace pageFont {
+  insert("fonts/font-page-jp", data)
+}
+
 namespace conclusionFont {
   insert("fonts/font-conclusion", data)
   insert("fonts/font-conclusion", map)

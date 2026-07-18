@@ -228,36 +228,9 @@ namespace dispatcher {
       tilemap.setColorWhite()
       and #$00ff; sta pageTotal
       lda screen.id; cmp.w #screen.information; bne +; jmp information; +
-      ldx #$0000
-      append.styleTiny()
-      append.alignSkip(2)
-      append.literal("Page")
-      lda pageTotal; cmp.w #10; jcs total_2
-
-      total_1: {
-        tilemap.write($a0fc)
-        append.alignLeft()
-        append.alignSkip(24)
-        lda pageIndex; append.integer1(); append.literal("/")
-        lda pageTotal; append.integer1()
-        lda #$0005; render.small.bpp2()
-        getTileIndex(counter, 2); mul(6); add #$03f4; tax
-        lda #$0005; write.bpp2()
-        leave; rtl
-      }
-
-      total_2: {
-        append.alignLeft()
-        append.alignSkip(23)
-        lda pageIndex; append.integer_2(); append.literal("/")
-        append.alignLeft()
-        append.alignSkip(37)
-        lda pageTotal; append.integer_2()
-        lda #$0006; render.small.bpp2()
-        getTileIndex(counter, 2); mul(6); add #$03f4; tax
-        lda #$0006; write.bpp2()
-        leave; rtl
-      }
+      //JP-style indicator, drawn in expanded ROM with the restored
+      //fixed-font tiles; leave there unwinds this function's enter.
+      jml pageTail
 
       information: {
         lda tilemap.address; sta pageAddress
@@ -308,5 +281,71 @@ namespace dispatcher {
 }
 
 codeCursor = pc()
+
+seek(textCursor)
+
+namespace dispatcher {
+namespace page {
+  //JP-style nine-cell page indicator. The paged-menu tilemaps index
+  //allocator VRAM slots, so copy glyphs from the pageFont strip into
+  //render.buffer, then DMA them to the fixed page slots $3f4+ as two
+  //color runs: green "PAGE", then white "n／ m". Entered via jml from
+  //page.total; leave unwinds that function's enter.
+  constant glyphP     = 0
+  constant glyphSlash = 4
+  constant glyphSpace = 5
+  constant glyphZero  = 6
+
+  function pageTail {
+    ldy #$0000
+    lda.w #glyphP+0; jsl copyGlyph
+    lda.w #glyphP+1; jsl copyGlyph
+    lda.w #glyphP+2; jsl copyGlyph
+    lda.w #glyphP+3; jsl copyGlyph
+    tilemap.setColorGreen()
+    lda #$0004; ldx #$03f4; write.bpp2()
+
+    ldy #$0000
+    lda pageIndex; jsl copyTwo
+    lda.w #glyphSlash; jsl copyGlyph
+    lda pageTotal; jsl copyTwo
+    tilemap.setColorWhite()
+    lda #$0005; ldx #$03f8; write.bpp2()
+    leave; rtl
+  }
+
+  //A => glyph#; Y => render.buffer write offset (advanced by 16)
+  function copyGlyph {
+    php; rep #$30; phx; phb
+    mul(16); tax
+    pea $3232; plb; plb
+    macro copyWord(variable n) {
+      lda.l pageFont.data+n*2,x; sta.w $6000+n*2,y
+    }
+    copyWord(0); copyWord(1); copyWord(2); copyWord(3)
+    copyWord(4); copyWord(5); copyWord(6); copyWord(7)
+    tya; add #$0010; tay
+    plb; plx; plp; rtl
+  }
+
+  //A => value 0-99: copies [space or tens digit][ones digit]
+  function copyTwo {
+    php; rep #$30; phx
+    and #$00ff
+    ldx #$0000
+  -;cmp.w #10; bcc +; sub.w #10; inx; bra -
+  +;pha
+    txa; bne tens
+    lda.w #glyphSpace; jsl copyGlyph; bra ones
+  tens:
+    add.w #glyphZero; jsl copyGlyph
+  ones:
+    pla; add.w #glyphZero; jsl copyGlyph
+    plx; plp; rtl
+  }
+}
+}
+
+textCursor = pc()
 
 }

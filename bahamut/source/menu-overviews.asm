@@ -20,6 +20,7 @@ namespace overviews {
   allocator.create(7,24,name)
   allocator.create(8,24,class)
   allocator.create(3,24,level)
+  allocator.create(2, 1,levelLabel)
 
   //A => party
   function party {
@@ -54,11 +55,22 @@ namespace overviews {
   }
 
   //A => level
+  //JP-style label: green "LV" from the pageFont strip (glyphs 16/17), then
+  //the white prerendered digit pair from the levels asset (strip tiles 1-2).
+  //Starts one cell earlier so "L" lands where the old Lv icon began.
   function level {
     enter
-    and #$00ff; min.w(100)  //100+ => "??"
-    mul(3); tay
-    lda #$0003; allocator.index(level); write.bpp2(lists.levels.bpp2)
+    pha
+    tilemap.decrementAddress(2)
+    ldy #$0000
+    lda.w #16; jsl dispatcher.page.copyGlyph  //L
+    lda.w #17; jsl dispatcher.page.copyGlyph  //V
+    tilemap.setColorGreen()
+    lda #$0002; allocator.index(levelLabel); write.bpp2()
+    tilemap.setColorWhite()
+    pla; and #$00ff; min.w(100)  //100+ => "??"
+    mul(3); inc; tay
+    lda #$0002; allocator.index(level); write.bpp2(lists.levels.bpp2)
     leave; rtl
   }
 }

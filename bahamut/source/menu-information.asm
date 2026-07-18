@@ -14,9 +14,9 @@ namespace information {
   seek($eeefbd); string.skip()  //disable static "Page" text
   seek($eea65a); string.skip()  //disable static "-" page separator
   seek($eeefd7); string.skip()  //disable static "-" page separator
-  seek($eea673); lda #$06f0     //"Page#" text position
-  seek($eeef97); lda #$06ea     //"Page#" text position
-  seek($eeeff0); lda #$06e6     //"Page#" text position
+  seek($eea673); lda #$06ea     //"Page#" text position (overview list, -3 tiles: the nine-cell JP indicator was overflowing the frame)
+  seek($eeef97); lda #$06ea     //"Page#" text position (overridden by the later $eeeff0 load)
+  seek($eeeff0); lda #$06ea     //"Page#" text position (info windows, +2 tiles to meet the JP right edge)
   seek($eea63c); nop #4         //disable "Page#" window border cutout
   seek($eeefa0); nop #4         //disable "Page#" window border cutout
 
