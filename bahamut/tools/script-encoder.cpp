@@ -135,7 +135,12 @@ auto Encoder::encodeScript(Script& script, vector<string>& english) -> void {
             if(auto code = TextEncoder::koFieldCode(glyph)) {
               context.script.append(*code);
             } else {
-              error("missing field KO glyph: ", read.argument, "\n", text, "\n");
+              //field glyphs outside the 144-slot single-byte map fall back to
+              //the same 16-bit compact command chapters use, so every sub-blob
+              //is addressable (renderKoGlyph16 in field-large.asm).
+              context.script.append(Command::Reserved0);
+              context.script.append(glyph >> 0 & 0xff);
+              context.script.append(glyph >> 8 & 0xff);
             }
           } else {
             context.script.append(Command::Reserved0);
