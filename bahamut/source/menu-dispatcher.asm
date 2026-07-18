@@ -64,6 +64,7 @@ namespace dispatcher {
   function hookCampaignMenu {
     lda.b menuIndex
     enter
+    pha; lda #$0000; sta page.shopInfo; pla
     cmp #$0000; bne +; lda.w #screen.formations;  sta screen.id; jmp return; +
     cmp #$0001; bne +; lda.w #screen.dragons;     sta screen.id; jmp return; +
     cmp #$0002; bne +; lda.w #screen.information; sta screen.id; jmp return; +
@@ -77,6 +78,7 @@ namespace dispatcher {
   function hookPartyMenu {
     lda.b menuIndex
     enter
+    pha; lda #$0000; sta page.shopInfo; pla
     cmp #$0000; bne +; lda.w #screen.magicItem;   sta screen.id; jmp return; +  //Magic
     cmp #$0001; bne +; lda.w #screen.magicItem;   sta screen.id; jmp return; +  //Item
     cmp #$0002; bne +; lda.w #screen.equipment;   sta screen.id; jmp return; +
@@ -214,12 +216,27 @@ namespace dispatcher {
     variable(2, pageTotal)
     variable(2, counter)
     variable(2, pageAddress)
+    variable(2, shopInfo)   //set by shop menu labels, cleared on party/campaign menu entry
+    variable(2, pageShift)  //per-draw: nonzero shifts the indicator +2 tiles (shop info only)
 
     //A => current page
     function index {
       enter
       and #$00ff; sta pageIndex
       leave; rtl
+    }
+
+    //drawWindowPaged wrappers that record whether the page indicator on this
+    //screen should be shifted, then tail into the shared window drawer. The
+    //shop item list and the party overview never shift; the equipment/item
+    //info windows shift only when reached from the shop (shopInfo set).
+    function drawPagedClear {
+      php; rep #$20; lda #$0000; sta pageShift; plp
+      jsl menu.drawWindowPaged; rtl
+    }
+    function drawPagedInfo {
+      php; rep #$20; lda shopInfo; sta pageShift; plp
+      jsl menu.drawWindowPaged; rtl
     }
 
     //A => total number of pages
@@ -256,8 +273,11 @@ namespace dispatcher {
 
         tilemap.setColorWhite()
         ldx #$0000
-        append.alignSkip(4)
+        //current page number and slash sit 2px left of the JP original; the
+        //max-page number stays put (the 2px is given back after the slash)
+        append.alignSkip(2)
         lda pageIndex; append.integer_2(); append.literal("/")
+        append.alignSkip(2)
         lda pageTotal; append.integer_2()
         lda #$0005; render.small.bpp2()
         ldx #$03f9
@@ -297,6 +317,13 @@ namespace page {
   constant glyphZero  = 6
 
   function pageTail {
+    //shift the indicator +2 tiles only on the shop info windows. pageShift is
+    //set per screen by the drawWindowPaged wrappers below (shop list/overview
+    //clear it, the info windows copy shopInfo into it). The party-menu info
+    //screen never reaches this tail: its screen.id is information, which takes
+    //the small-font branch in page.total above.
+    lda pageShift; beq +
+    tilemap.incrementAddress(4); +
     ldy #$0000
     lda.w #glyphP+0; jsl copyGlyph
     lda.w #glyphP+1; jsl copyGlyph

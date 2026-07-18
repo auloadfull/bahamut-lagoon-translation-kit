@@ -8,7 +8,7 @@ namespace shop {
   //item list
   seek($eee746); jsl item.name
   seek($eee766); jsl item.cost
-  seek($eee681); jsl drawWindowPaged
+  seek($eee681); jsl dispatcher.page.drawPagedClear  //shop item list: never shift the page indicator
   seek($eee74a); lda #$0052  //item cost position (5-tile skip field; digit edge 8px left of previous build)
   seek($eee5ac); lda #$0016  //X cursor position
   seek($eee5a5); adc #$003d  //Y cursor position
@@ -149,6 +149,7 @@ namespace shop {
   namespace menu {
     function buy {
       enter
+      lda #$0001; sta dispatcher.page.shopInfo  //shift the page indicator +2 tiles for shop only
       ldy.w #strings.bpp2.buy
       allocator.index(buy)
       lda #$0002; write.bpp2(lists.strings.bpp2)

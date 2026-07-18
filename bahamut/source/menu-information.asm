@@ -4,8 +4,8 @@ seek(codeCursor)
 
 namespace information {
   enqueue pc
-  seek($eeef93); jsl drawWindowPaged        //"Equipment Summary" and "Item Explanation" windows
-  seek($eef090); jsl drawWindowPaged        //"Dragon Keeper's Item Explanation" window
+  seek($eeef93); jsl dispatcher.page.drawPagedInfo  //"Equipment Summary" and "Item Explanation" windows (shift only from shop)
+  seek($eef090); jsl dispatcher.page.drawPagedInfo  //"Dragon Keeper's Item Explanation" window (shift only from shop)
   seek($eef31c); string.hook(summary)       //"Equipment Summary" text
   seek($eef35a); string.hook(explanation)   //"Item Explanation" text
   seek($eef345); string.skip()              //"Dragon Keeper's" text
@@ -16,7 +16,7 @@ namespace information {
   seek($eeefd7); string.skip()  //disable static "-" page separator
   seek($eea673); lda #$06ea     //"Page#" text position (overview list, -3 tiles: the nine-cell JP indicator was overflowing the frame)
   seek($eeef97); lda #$06ea     //"Page#" text position (overridden by the later $eeeff0 load)
-  seek($eeeff0); lda #$06ea     //"Page#" text position (info windows, +2 tiles to meet the JP right edge)
+  seek($eeeff0); lda #$06e6     //"Page#" text position (shared by shop and party info; the shop +2-tile offset is applied in the dispatcher pageTail)
   seek($eea63c); nop #4         //disable "Page#" window border cutout
   seek($eeefa0); nop #4         //disable "Page#" window border cutout
 
@@ -136,8 +136,9 @@ namespace itemExplanation {
     and #$00ff
     ldx #$0000
     cmp.w #100; bcc +; append.literal("??"); rtl; +
-    cmp.w #10; bcs +; append.alignSkip(4); bra ++; +
-    append.alignSkip(2); +
+    //both count columns sit 2px left of the JP original; drop 2px from each
+    //digit-count skip (was 4/2) to line them up
+    cmp.w #10; bcs +; append.alignSkip(2); +
     append.integer_2()
     rtl
   }

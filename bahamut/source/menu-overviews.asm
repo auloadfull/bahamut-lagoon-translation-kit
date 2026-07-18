@@ -8,7 +8,7 @@ namespace overviews {
   seek($eea6d2); jsl name
   seek($eea6e6); jsl class
   seek($eea6fa); jsl level
-  seek($eea628); jsl drawWindowPaged
+  seek($eea628); jsl dispatcher.page.drawPagedClear  //party overview: never shift the page indicator
   seek($eea26b); lda #$0056   //X cursor position (initial)
   seek($eea265); inc; nop #2  //Y cursor position (initial) (was adc #$0002 sans clc)
   seek($eea113); lda #$0056   //X cursor position (active)
