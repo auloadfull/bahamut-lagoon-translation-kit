@@ -60,7 +60,7 @@ obj/script-extractor.o: script-extractor.cpp
 obj/string-scanner.o:   string-scanner.cpp
 
 BASS := ../../bass/out/bass
-KO_LISTS := chapters commands fieldUnitMessages techniques items classes dragons enemies names parties levels levelsFieldMagic levels4 stats stats_bpi4 stats_bpd4 quantities counts countsKo costsMP costsMP_num costsSP strings_bpp2 strings_bpp4 strings_bpo4 strings_bph4
+KO_LISTS := chapters commands fieldUnitMessages techniques items classes dragons enemies names parties levels levelsTechnique levelsFieldMagic levels4 stats stats_bpi4 stats_bpd4 quantities counts countsKo costsMP costsMP_num costsSP strings_bpp2 strings_bpp4 strings_bpo4 strings_bph4
 
 build: cli
 	out/base56

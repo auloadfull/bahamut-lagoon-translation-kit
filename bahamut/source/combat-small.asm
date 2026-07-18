@@ -840,20 +840,34 @@ namespace enemy {
 
     function write {
       variable(2, value)
+      variable(2, tiles)
 
       sta value
       ldx #$0000
-      lda value; cmp.w #1000; bcc +; append.literal("???"); bra render; +
+      lda value; cmp.w #10000; bcs unknownValue
+      cmp.w #1000; bcs integer4
+      cmp.w #100; bcs integer3
+      append.alignSkip(2)
+    integer3:
       append.integer_3()
+      lda #$0003; bra render
+    integer4:
+      append.integer_4()
+      lda #$0004; bra render
+    unknownValue:
+      append.literal("????")
+      lda #$0004
     render:
-      lda #$0003; ldy #$0000; render.small.bpo4()
+      sta tiles
+      ldy #$0000; render.small.bpo4()
       index.for9x16(counter)
-      lda #$0003; write.bpp4()
+      lda tiles; write.bpp4()
       txy; jsl tilemap.calculateIndex; sub #$0004; tax
       tilemap.write($000d)
       tilemap.write($000e)
-      inx #2  // KO: keep one 8px blank tile between "HP" and the value.
-      lda #$0003; tilemap.write()
+      lda tiles; cmp #$0004; beq +
+      inx #2  // KO: keep one 8px blank tile between "HP" and 3-tile values.
+    +;lda tiles; tilemap.write()
       rtl
     }
   }
@@ -922,16 +936,20 @@ namespace combatMenu {
 
     loop: {
       lda index; tax
-      lda $0940,x; and #$00ff
-      ldx #$0000; append.technique()
-      render.small.width(); add #$0007; div(8); inc  //+1 to account for the menu cursor
+      //Technique text now uses compact 12x12 glyph commands for field/combat
+      //announcements.  The command menu itself is still the pre-rendered 8x8
+      //list, so use its generated tile width instead of decoding that text as
+      //a small-font string.
+      lda $0940,x; and #$00ff; tax
+      lda.l lists.techniques.widths,x; and #$00ff; inc  //+1 for menu cursor
       cmp width; bcc +; sta width; +
       lda index; inc; sta index
       cmp count; jcc loop
     }
 
-    lda width; min.w(7); sta width  // KO: keep command windows one tile tighter for Korean commands
-    sep #$20; lda width; sta.w windowWidth
+    lda width; min.w(7); sta width  // KO: keep command text/cursor anchor at the measured width.
+    add #$0002; min.w(9)            // KO: extend only the right border by two tiles.
+    sep #$20; sta.w windowWidth
     lda.w windowOffset; add #$07; sub width; sta.w windowOffset
     leave; rtl
   }
@@ -941,7 +959,7 @@ namespace technique {
   enqueue pc
   seek($c12f09); jml hook; nop
   seek($c13e2c); jsl details; jmp $3e45
-  seek($c13de1); lda #$0f    //window width
+  seek($c13de1); lda #$0e    //KO: match the JP technique window width (one tile narrower)
   seek($c13e23); nop #3      //disable 'Lv.' marker
   seek($c13e76); ldy #$000e  //# of tiles to gray when MP/SP is too low to use a technique
   dequeue pc
@@ -1019,7 +1037,7 @@ namespace technique {
     lda #$0003; render.small.bpo4()
     index.for3x16R(counterCost)
     lda #$0003; write.bpp4()
-    txy; lda costIndex; add #$0002; tax
+    txy; lda costIndex; tax  //KO: follow the one-tile-narrower JP window
     lda #$0003; tilemap.write()
 
     //this is needed so that subsequent lines start at the beginning of the line.
@@ -1098,16 +1116,6 @@ namespace item {
     variable(2, counter)
 
     enter
-    lda use.suppressQuantity; beq +
-      ldx #$0000; txy
-      append.literal("___")
-      lda #$0003; render.small.bpo4()
-      index.for3x16L(counter)
-      lda #$0003; write.bpp4()
-      txy; jsl tilemap.calculateIndex; tax
-      lda #$0003; tilemap.write()
-      leave; rtl
-    +
     lda.l counts,x; and #$00ff; min.w(100)
     ldx #$0000; txy
     cmp.w #100; bcc +; append.alignRight(); append.literal("??"); bra render; +
@@ -1132,7 +1140,6 @@ namespace item {
     variable(2, counter)
     variable(2, count)
     variable(2, total)
-    variable(2, suppressQuantity)
 
     //------
     //c19d06  lda #$09   ;window width in tiles
@@ -1143,9 +1150,6 @@ namespace item {
       lda #$0009  //JP layout: fixed 9-tile item name slot including icon.
       sep #$20
       sta.w windowWidth
-      inc.w windowOffset  //move the window one tile to the right (to avoid overlapping the dragon)
-      rep #$20
-      lda #$0001; sta suppressQuantity  //the confirm window prints its own count/total row.
       leave; rtl
     }
 
@@ -1165,42 +1169,60 @@ namespace item {
     //------
     function setTotal {
       variable(2, counter)
-      variable(2, tileIndex)
 
       enter
+      ldx #$0000; txy
       lda.w itemTotal; and #$00ff; sta total
+      lda count; and #$00ff; cmp.w #10; jcs count_2
 
-      index.for8x2(counter)
-      stx tileIndex
+      count_1: {
+        // Left count block: right edge fixed at x=24px.
+        append.alignSkip(8)
+        lda count; append.integer1()
+        append.byte($d3)
+        jmp separator
+      }
 
-      //Render as Japanese-style "1개/  2개" blocks, using the pre-rendered
-      //Korean count list so the suffix remains white and does not use the old
-      //yellow active-count conversion.
-      lda count; and #$00ff; min.w(100); mul(3); tay
-      ldx tileIndex
-      lda #$0003; write.bpp4(lists.countsKo.bpo4)
+      count_2: {
+        // Two digits + suffix is 24px, so start at x=0.
+        lda count; append.integer_2()
+        append.byte($d3)
+        jmp separator
+      }
 
-      ldx #$0000; txy
-      append.byte($5c)  //the small-font $2f glyph is mirrored in this context.
-      lda #$0001; render.small.bpo4()
-      ldx tileIndex; inx #3
-      lda #$0001; write.bpp4()
+      separator: {
+        // Slash is fixed independently of count/total digit widths.
+        append.alignLeft()
+        append.alignSkip(24)
+        append.literal("/")
+      }
 
-      ldx #$0000; txy
-      append.literal("_")
-      lda #$0001; render.small.bpo4()
-      ldx tileIndex; inx #4
-      lda #$0001; write.bpp4()
+      lda total; cmp.w #10; jcs total_2
 
-      lda total; and #$00ff; min.w(100); mul(3); tay
-      ldx tileIndex; inx #5
-      lda #$0003; write.bpp4(lists.countsKo.bpo4)
+      total_1: {
+        // Right total block: right edge fixed at x=62px.
+        append.alignLeft()
+        append.alignSkip(48)
+        lda total; append.integer1()
+        append.byte($d3)
+        jmp render
+      }
+
+      total_2: {
+        // Two digits + suffix is 24px, right edge still fixed at x=62px.
+        append.alignLeft()
+        append.alignSkip(40)
+        lda total; append.integer_2()
+        append.byte($d3)
+        jmp render
+      }
 
       render: {
-        ldx tileIndex
-        txy; jsl tilemap.calculateIndex; sub #$0006; tax
+        lda #$0008; render.small.bpo4()  //white: do not convert to .bpa4
+        index.for8x2(counter)
+        lda #$0008; write.bpp4()
+        txy; jsl tilemap.calculateIndex; sub #$0008; tax
         lda #$0008; tilemap.write()
-        stz suppressQuantity
         leave; rtl
       }
     }
@@ -1242,6 +1264,7 @@ namespace item {
         append.alignSkip(2)
         append.literal("_")
         lda index; append.integer1(); append.literal("/_")
+        append.alignSkip(2)  //nudge the max-page digit 2px right to match JP
         lda total; append.integer1()
         lda #$0005; render.small.bpo4()
         index.for8x2(counter)

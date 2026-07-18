@@ -329,6 +329,10 @@ namespace levels {
   insert("lists/levels", bpo4)
 }
 
+namespace levelsTechnique {
+  insert("lists/levelsTechnique", bpp2)
+}
+
 namespace levelsMagic {
   insert("lists/levelsMagic", bpp2)
   insert("lists/levelsMagic", bpp4)

@@ -78,7 +78,7 @@ namespace dragons {
   allocator.bpp2()
   allocator.create( 5, 2,party)
   allocator.create( 7, 8,playerName)
-  allocator.create( 6,10,techniqueName)
+  allocator.create( 9,10,techniqueName)  //9 wide so the unused-slot dashes (9) fit
   allocator.create( 3,10,techniqueLevel)
   allocator.create(15, 2,reservedDragon)
   allocator.create( 8, 2,selectedDragon)
@@ -164,17 +164,39 @@ namespace dragons {
     function name {
       enter
       and #$00ff
-      mul(8); tay
+      cmp.w #dispatcher.technique.unusedID; bne +; jmp empty; +
+      tax; lda lists.techniques.widths,x; and #$00ff; sta dispatcher.technique.nameWidth
+      txa; mul(8); tay
       lda #$0006; allocator.index(techniqueName); write.bpp2(lists.techniques.bpp2)
+      leave; rtl
+    empty:
+      //JP renders the empty slot as dashes from the menu font, not the KO list.
+      lda #$0006; sta dispatcher.technique.nameWidth
+      tilemap.setColorWhite()
+      ldx #$0000; append.literal("---------")
+      lda #$0009; render.small.bpp2()
+      lda #$0009; allocator.index(techniqueName); write.bpp2()
       leave; rtl
     }
 
     //A => technique level
+    //flows immediately after the KO name (name start + name width) instead of a
+    //fixed slot, so short Korean names sit flush against their level. The
+    //tilemap.address is saved and restored (matching magicLevel) so the shift is
+    //local to the level draw and cannot corrupt the feeding item quantities that
+    //share this screen's render path.
     function level {
       enter
-      and #$00ff; min.w(100)  //100+ => "??"
-      mul(3); tay
-      lda #$0003; allocator.index(techniqueLevel); write.bpp2(lists.levels.bpp2)
+      and #$00ff; min.w(100); mul(3); tay  //Y => level index into lists.levels
+      lda tilemap.address; sta dispatcher.technique.levelAddress
+      lda #$0006; sub dispatcher.technique.nameWidth
+      bpl +; lda #$0000; +  //name wider than the slot => no shift (defensive)
+      asl
+      pha; lda tilemap.address; sub $01,s; sta tilemap.address; pla
+      //left-aligned levels variant: single-digit hugs the LV glyph ("Lv1"),
+      //while the shared lists.levels (overview/unit LV) stays right-aligned.
+      lda #$0003; allocator.index(techniqueLevel); write.bpp2(lists.levelsTechnique.bpp2)
+      lda dispatcher.technique.levelAddress; add #$0006; sta tilemap.address
       leave; rtl
     }
   }

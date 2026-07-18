@@ -162,6 +162,12 @@ namespace dispatcher {
   }
 
   namespace technique {
+    //shared between formations/dragons name (writes) and level (reads); lets the
+    //level flow immediately after a short KO technique name instead of a fixed slot.
+    constant unusedID = $00ff
+    variable(2, nameWidth)
+    variable(2, levelAddress)  //saved so level restores tilemap.address like magicLevel
+
     //A => technique name
     function name {
       php; rep #$20; pha
@@ -192,10 +198,14 @@ namespace dispatcher {
     //ee9a21  ora $1862
     //ee9a24  sta $c400,x
     //------
+    //glyph.numbers ($01-$0a) and glyph.multiplier ($ed) hold JP digit/× bitmaps
+    //(font-encoder copies them from $af-$b8/$e7 at build time). Do NOT reference
+    //$af+/$e7 directly here: the paged list loads clobber that tile range, so
+    //page 2 of the overview rendered Korean glyphs in the count column.
     function multiplier {
       enter
       tilemap.decrementAddress(2)
-      tilemap.setColorIvory()
+      tilemap.setColorWhite()
       tilemap.write(glyph.multiplier)
       leave; rtl
     }
@@ -203,7 +213,7 @@ namespace dispatcher {
     //A => technique count
     function count {
       enter
-      tilemap.setColorIvory()
+      tilemap.setColorWhite()
       and #$00ff; add.w #glyph.numbers; pha
       lda tilemap.address; tax; pla
       ora tilemap.attributes; sta tilemap.location,x

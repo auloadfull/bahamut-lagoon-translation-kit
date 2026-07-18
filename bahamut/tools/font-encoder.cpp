@@ -61,16 +61,21 @@ auto rebuildMenuFont() -> void {
     replace(0x1b + index, 0x74 + index);
   }
 
-  //'0' - '9' (for single-digit numbers; eg x# counters)
+  //'0' - '9' (for single-digit numbers; eg x# counters). Copy the JP menu-font
+  //digits (tiles 0xaf-0xb8, still original at this point) instead of stamping
+  //the English fixed-font digits, so x# counters render Japanese. These low
+  //tiles survive the paged list loads; referencing 0xaf+ directly does not.
   for(u8 index : range(10)) {
-    replace(0x36 + index, 0x01 + index);
+    memory::copy(output.data() + (0x01 + index) * 16, output.data() + (0xaf + index) * 16, 16);
   }
 
   replace(0x35, 0xae);  //'-' (name entry screen only)
   replace(0x40, 0x8e);  //'.' (name entry screen only)
   replace(0x5e, 0xf1);  //'Up' arrow
   replace(0x5f, 0xf2);  //'Down' arrow
-  replace(0x48, 0xed);  //'x' technique multiplier
+  //'x' technique multiplier: copy the JP menu-font multiplier glyph (tile 0xe7,
+  //still original at this point) instead of the English fixed-font 'x'.
+  memory::copy(output.data() + 0xed * 16, output.data() + 0xe7 * 16, 16);
   replace(0x90, 0x29);  //'|'
 
   //window border tiles
