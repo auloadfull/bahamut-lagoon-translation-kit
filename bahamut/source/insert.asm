@@ -207,6 +207,17 @@ namespace pageFont {
   insert("fonts/font-page-jp", data)
 }
 
+//10 KO 12x12 dragon-stat labels (2x2 tiles each) for the JP-layout stats row
+namespace koDragonStatLabels {
+  insert("fonts/font-ko-dragon-stats", data)
+}
+
+//JP digits shifted 4px left as left/right half-tile pairs; the dragon-screen
+//stat values OR adjacent halves into a 3-tile buffer.
+namespace koDragonStatDigits {
+  insert("fonts/font-ko-dragon-digits", data)
+}
+
 namespace conclusionFont {
   insert("fonts/font-conclusion", data)
   insert("fonts/font-conclusion", map)
