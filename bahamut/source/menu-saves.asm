@@ -13,6 +13,15 @@ namespace saves {
   seek($eed5d5); string.skip()        //"Time" text
   seek($eefa1f); jsl bonusDungeon     //"Bonus Dungeon#" integer
   seek($eed5a9); string.hook(exPlay)  //"Ex-Play" text
+  //The Ex-Play slot header ($eed563, called only by the three save slots)
+  //unconditionally clears three tilemap cells at its group position + $0e.
+  //KO moved that group onto the title row ($dc/$29c/$45c), so the clear wiped
+  //the title's top-row cells 10-12 (px80-103) every render - the fixed
+  //mid-title "8px hole" over 아/자 that was independent of the title text.
+  //The chapter number is drawn separately (chapter.slot1-3), so this clear is
+  //orphaned; disable it. Scoped to the save screen: $eed563's only callers are
+  //the three slots.
+  seek($eed590); nop #7               //was: ldy #$0003; jsl $ee4d93
   seek($eef9fc); string.skip()        //"Bonus Dungeon" text
   seek($eefa18); lda #$0000           //"Bonus Dungeon" position
 
