@@ -62,6 +62,36 @@ auto extractStatsFont() -> void {
   );
 }
 
+auto extractTitleFont() -> void {
+  FontExtractor font;
+  font.extractTitle();
+
+  vector<u32> palette = {0x000000, 0xffffff, 0xaaaaaa, 0x555555};
+  Encode::BMP::create({pathJP, "fonts/font-title.bmp"},
+    font.encodeBitmap(palette).data(), font.bitmapPitch(), font.bitmapWidth(), font.bitmapHeight(), false
+  );
+}
+
+auto extractOpeningFont() -> void {
+  FontExtractor font;
+  font.extractOpening();
+
+  vector<u32> palette = {0x000000, 0xffffff, 0xaaaaaa, 0x555555};
+  Encode::BMP::create({pathJP, "fonts/font-opening.bmp"},
+    font.encodeBitmap(palette).data(), font.bitmapPitch(), font.bitmapWidth(), font.bitmapHeight(), false
+  );
+}
+
+auto extractEndingFont() -> void {
+  FontExtractor font;
+  font.extractEnding();
+
+  vector<u32> palette = {0x000000, 0xffffff, 0xaaaaaa, 0x555555};
+  Encode::BMP::create({pathJP, "fonts/font-ending.bmp"},
+    font.encodeBitmap(palette).data(), font.bitmapPitch(), font.bitmapWidth(), font.bitmapHeight(), false
+  );
+}
+
 auto nall::main() -> void {
   directory::create({pathJP, "fonts/"});
   extractLargeFont();
@@ -69,4 +99,7 @@ auto nall::main() -> void {
   extractFieldFont();
   extractCombatFont();
   extractStatsFont();
+  extractTitleFont();
+  extractOpeningFont();
+  extractEndingFont();
 }

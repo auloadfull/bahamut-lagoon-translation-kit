@@ -10,6 +10,9 @@ struct FontExtractor {
   auto extractField() -> void;
   auto extractCombat() -> void;
   auto extractStats() -> void;
+  auto extractTitle() -> void;
+  auto extractOpening() -> void;
+  auto extractEnding() -> void;
 
   auto bitmapWidth() const -> u32 { return context.countWidth * (context.characterWidth + 1); }
   auto bitmapHeight() const -> u32 { return context.countHeight * (context.characterHeight + 1); }
@@ -132,6 +135,59 @@ auto FontExtractor::extractStats() -> void {
   u32 offset = 0x266420;
   array_view<u8> input{rom.data() + offset, rom.size() - offset};
   extract4bpp(input);
+}
+
+//Title-screen menu font: LZSS-compressed at $e8:9a4f (decompressor at $d5:8c4f,
+//loaded by $d5:e6d1), decompressed to $7f:0000 then $0800 (2048) bytes DMA'd to
+//VRAM. Pre-composed "New Play / DataLoad / Temporally Play" title menu tiles.
+//128 tiles at 2bpp = a 16x8 grid.
+auto FontExtractor::extractTitle() -> void {
+  context.name = "title";
+  context.depth = 2;
+  context.countWidth = 16;
+  context.countHeight = 8;
+  context.characterWidth = 8;
+  context.characterHeight = 8;
+  characters.resize(16 * 8);
+
+  u32 offset = 0x289a4f;
+  auto input = decompressLZSS({rom.data() + offset, rom.size() - offset});
+  extract2bpp(input);
+}
+
+//Opening-credits font: LZSS-compressed at $e8:7669 (decompressor at $d5:8c4f,
+//loaded by $d5:963b during the prologue), decompressed to $7f:0000 then DMA'd
+//to VRAM. Full alphanumeric set used for the staff roll shown over the intro.
+//64 tiles at 2bpp = a 16x4 grid.
+auto FontExtractor::extractOpening() -> void {
+  context.name = "opening";
+  context.depth = 2;
+  context.countWidth = 16;
+  context.countHeight = 4;
+  context.characterWidth = 8;
+  context.characterHeight = 8;
+  characters.resize(16 * 4);
+
+  u32 offset = 0x287669;
+  auto input = decompressLZSS({rom.data() + offset, rom.size() - offset});
+  extract2bpp(input);
+}
+
+//Ending-credits font: LZSS-compressed at $e8:dd33 (decompressor at $d5:8c4f),
+//decompressed to $7f:0000 then $0400 (1024) bytes DMA'd to VRAM.
+//64 tiles at 2bpp = a 16x4 grid.
+auto FontExtractor::extractEnding() -> void {
+  context.name = "ending";
+  context.depth = 2;
+  context.countWidth = 16;
+  context.countHeight = 4;
+  context.characterWidth = 8;
+  context.characterHeight = 8;
+  characters.resize(16 * 4);
+
+  u32 offset = 0x28dd33;
+  auto input = decompressLZSS({rom.data() + offset, rom.size() - offset});
+  extract2bpp(input);
 }
 
 //hardcoded to 12x12 size
