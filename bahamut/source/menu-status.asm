@@ -358,13 +358,15 @@ namespace status {
       lda #$0003; allocator.index(hpRange); write.bpp4()
       tilemap.setColorWhite()
       ldx #$0000
-      append.alignSkip(8)
+      //4-digit HP like the dragon path below (was appendStatusInteger3 which
+      //capped at 999 -> "???" for 4-digit player HP). Same 9-tile field.
       lda current
-      appendStatusInteger3()
+      cmp.w #10000; bcc +; append.literal("????"); bra ++; +
+      append.integer_4(); +
       append.literal("/")
-      append.alignSkip(8)
       lda maximum
-      appendStatusInteger3()
+      cmp.w #10000; bcc +; append.literal("????"); bra ++; +
+      append.integer_4(); +
       lda #KO_STATUS_RANGE_VALUE_WIDTH; render.small.bpp4()
       lda #KO_STATUS_RANGE_VALUE_WIDTH; allocator.index(hpRange); inx #KO_STATUS_RANGE_VALUE_OFFSET_TILES; write.bpp4()
       leave; rtl

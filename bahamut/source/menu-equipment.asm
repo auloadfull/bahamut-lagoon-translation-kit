@@ -39,9 +39,9 @@ namespace equipment {
     seek($eeb797); lda #$0342     //"HP" position
     seek($eeb8de); lda #$074c     //weapon name position
     seek($eeb91a); lda #$07cc     //armor name position
-    seek($eeb95d); ldx #$000f     //item list window width (increase by 1)
-    seek($eeb946); ldx #$000f     //item list window clear width
-    seek($eeb987); lda #$0016     //item quantity position
+    seek($eeb95d); ldx #$000e     //item list window width (JP width; right border -8px)
+    seek($eeb946); ldx #$000e     //item list window clear width (match window)
+    seek($eeb987); lda #$0016     //item quantity position (reverted; $0010 made counts vanish)
     seek($eeb2e2); lda #$0086     //weapon/armor X cursor position (initial)
     seek($eeb2db); adc #$009d     //weapon/armor Y cursor position (initial)
     seek($eeb3a2); lda #$0086     //weapon/armor X cursor position (active)

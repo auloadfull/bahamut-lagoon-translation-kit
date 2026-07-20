@@ -487,8 +487,14 @@ namespace unit {
       lda #$0003; allocator.index(playerHpLabel); write.bpp2()
       tilemap.setColorWhite()
       ldx #$0000
-      lda maximum; tay; lda current
-      jsl appendPaddedUnitRange3Value
+      //4-digit like the dragon/enemy paths (was appendPaddedUnitRange3Value which
+      //capped at 999 -> "???"). appendDragonInteger4 keeps the same 8/16/24 right-
+      //align padding for 1-3 digits, so short-HP layout is unchanged.
+      lda current
+      appendDragonInteger4()
+      append.literal("/")
+      lda maximum
+      appendDragonInteger4()
       lda #$0009; render.small.bpp2()
       lda #$0009; allocator.index(playerHpValue); write.bpp2()
       leave; rtl
