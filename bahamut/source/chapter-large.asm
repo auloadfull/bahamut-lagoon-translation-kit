@@ -27,10 +27,16 @@ namespace renderLargeText {
   //------
   //Y => current string read position
   function main {
-    //the opening credits uses a different routine for pre-rendered text with a different font
+    //Opening credits restored to the JP original. The common $da3b22 hook stays
+    //(every Korean chapter needs it), but event $fa now passes through to the JP
+    //native renderer instead of Near's pre-rendered path: reproduce the original
+    //LDA [$76],Y / CMP #$F0 (the four bytes this hook replaced) and rtl, so the
+    //BCS at $da3b26 sees the correct A and C/Z/N. The insert(fa) override is also
+    //removed so the JP $fa event data survives. openingCredits.main stays defined
+    //but is no longer reached.
     lda.w eventNumber; cmp #$fa; bne +        //$fa is the opening credits event#
     lda $78; cmp.b #render.text >> 16; beq +  //ensure this isn't the debugger event# string
-    jml openingCredits.main; +
+    lda [buffer],y; cmp.b #$f0; rtl; +
 
     phb; php; rep #$30; phx
     ldb #$7e

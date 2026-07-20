@@ -89,7 +89,9 @@ namespace chapter {
   insert(41);insert(42);insert(43);insert(44);insert(46);insert(48);insert(49);insert(4b)
   insert(4c);insert(4d);insert(4e);insert(50);insert(d0);insert(d1);insert(d2);insert(d3)
   insert(d4);insert(d5);insert(d6);insert(d7);insert(f3);insert(f4);insert(f5);insert(f6)
-  insert(f7);insert(fa)
+  insert(f7)  //insert(fa) removed: keep the JP-original opening ($fa) event block
+              //at $de:1dbb so the restored JP opening credits read real strings
+              //(encodeOpeningCredits blanks them; chapter-fa.bin is now unused)
 }
 
 namespace field {
