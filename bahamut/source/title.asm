@@ -8,6 +8,12 @@ namespace titleScreen {
 seek(codeCursor)
 
 namespace hook {
+  //Reverted to JP-original title screen: disable every title-menu/logo/copyright/
+  //font overwrite so the base ROM's original "New Play / DataLoad / Temporally
+  //Play" menu text, dedicated font and layout render unchanged. The
+  //newGame/loadGame/resume/exPlay cursor helpers below become unreferenced dead
+  //code (harmless; kept to avoid symbol churn).
+  if 0 {
   enqueue pc
 
   //load new graphical data (copyright and menu text)
@@ -100,6 +106,7 @@ namespace hook {
     db Y,X+$50,$35
 
   dequeue pc
+  } //if 0 -- JP-original title screen restored
 
   //these functions dynamically center the menu options based on whether Ex-Play is shown.
   //this creates a better space balance between the logo and the copyright.

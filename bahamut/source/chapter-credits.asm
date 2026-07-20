@@ -54,9 +54,15 @@ namespace openingCredits {
 }
 
 namespace endingCredits {
+  //A-revert (JP-native ending): the JP original $da758b credit compositor runs
+  //with the JP $e8:dd33 font/palette (render hook stays disabled below). But we
+  //KEEP Near's disableColorMath: the JP original enabled BG3 color math on the
+  //ending, which adds the bright sky/flag subscreen onto the text (the yellow/
+  //green "bleed") and hurts readability. Clearing the BG3 color-math bit gives
+  //clean JP-font text without changing the font/layout.
   enqueue pc
   seek($da2856); jsl disableColorMath
-  seek($da758b); jsl main; jmp $7599
+  //seek($da758b); jsl main; jmp $7599  //JP-native render; do not re-enable
   dequeue pc
 
   constant eventNumber = $7e0310  //$f8 => ending credits
@@ -71,11 +77,13 @@ namespace endingCredits {
   //da2856  lda [$28],y  ;load value to write to $2131 (CGADDSUB)
   //da2858  sta $71      ;save value for later use
   //------
+  //A-revert fix: the JP-native ending re-enables BG3 color math, which adds the
+  //bright sky/flag subscreen onto the white credit text (the "yellow bleed").
+  //Near's original guard was narrowed to one HDMA byte ($c7:08f0, y=$17) that
+  //matched only Near's prerendered path, so under the JP-native table it never
+  //fired. Gate on the ending event only ($f8) and clear the BG3 color-math bit
+  //for every CGADDSUB byte during the ending, leaving all other screens intact.
   function disableColorMath {
-    lda $28; cmp #$f0;         beq +; lda [$28],y; sta $71; rtl; +
-    lda $29; cmp #$08;         beq +; lda [$28],y; sta $71; rtl; +
-    lda $2a; cmp #$c7;         beq +; lda [$28],y; sta $71; rtl; +
-    cpy #$0017;                beq +; lda [$28],y; sta $71; rtl; +
     lda eventNumber; cmp #$f8; beq +; lda [$28],y; sta $71; rtl; +
     lda [$28],y; and #$fb; sta $71; rtl  //clear BG3 color math enable bit
   }
@@ -296,9 +304,11 @@ namespace endingCredits {
 }
 
 namespace endingGraphic {
-  enqueue pc
-  seek($d5f159); jsl hook; nop
-  dequeue pc
+  //A-revert (JP-native ending): disable Near's 24-sprite "The End" override so
+  //the JP original 4-sprite "The End" graphic is restored.
+  //enqueue pc
+  //seek($d5f159); jsl hook; nop
+  //dequeue pc
 
   //the original "The End" graphic was comprised of only 4 sprite list entries.
   //the new graphic needs 24 sprite list entries, but there is no space for it.

@@ -63,11 +63,13 @@ namespace hook {
   seek($ecfaf8); dl conclusionFont.data
   seek($ecfafd); dl conclusionFont.map
   seek($ef0380); insert "../en/binaries/base56/base56-names.bin"
-  seek($d5f0d5); {
-    rep #$20; lda.w #endingFont.data >>  0; sta $28
-    sep #$20; lda.b #endingFont.data >> 16; sta $2a
-  }
-  seek($d5f106); lda #$0c00  //endingFont.size
+  //A-revert (JP-native ending): disable the endingFont redirect so the JP
+  //original code loads its own $e8:dd33 font at the original $0400 DMA size.
+  //seek($d5f0d5); {
+  //  rep #$20; lda.w #endingFont.data >>  0; sta $28
+  //  sep #$20; lda.b #endingFont.data >> 16; sta $2a
+  //}
+  //seek($d5f106); lda #$0c00  //endingFont.size
 }
 
 namespace chapter {

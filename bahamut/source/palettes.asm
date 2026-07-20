@@ -17,10 +17,15 @@ seek(codeCursor)
 
 namespace chapter {
   enqueue pc
-  seek($e87cdd); {  //add yellow text color
+  seek($e87cdd); {  //chapter cutscene text palette
     dw white   //color 1
     dw black   //color 2
-    dw yellow  //color 3
+    //color 3 restored to white (JP original): this palette is shared with the
+    //JP-native ending credits, which inherit it for their text edge. KO had set
+    //it yellow for chapter emphasis, which bled through as the ending "yellow"
+    //(confirmed by a red/green/blue diagnostic). White matches the JP original
+    //and clears the ending bleed; chapter emphasis text now renders white.
+    dw white   //color 3
   }
   dequeue pc
 }
@@ -94,16 +99,17 @@ namespace menu {
 }
 
 namespace titleScreen {
-  enqueue pc
-  seek($e89de0); dw black, silver,  white  //inactive menu item palette
-  seek($e89e00); dw black, crimson, red    //selected menu item palette
-  dequeue pc
+  //Reverted to JP-original title screen: leave the base ROM menu palettes so the
+  //original "New Play / DataLoad" menu text renders in its original colors.
+  //enqueue pc
+  //seek($e89de0); dw black, silver,  white  //inactive menu item palette
+  //seek($e89e00); dw black, crimson, red    //selected menu item palette
+  //dequeue pc
 }
 
 namespace endingScreen {
-  enqueue pc
-  seek($e8ddf0); insert "../en/binaries/fonts/font-ending-palette.bin"
-  dequeue pc
+  //Near's ending palette override stays disabled so the JP original loads:
+  //seek($e8ddf0); insert "../en/binaries/fonts/font-ending-palette.bin"
 }
 
 codeCursor = pc()
