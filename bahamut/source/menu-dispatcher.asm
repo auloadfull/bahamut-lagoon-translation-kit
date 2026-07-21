@@ -300,11 +300,12 @@ namespace dispatcher {
       enter
       tilemap.setColorWhite()
       tilemap.write($a0fc)
-      ldx #$0000; append.styleTiny()
-      append.alignSkip(2); append.literal("No Items!")
-      lda #$0005; render.small.bpp2()
+      //KO: draw the prerendered strings-pool "아이템없음" (the same asset the
+      //magic/item menu's noItems uses) instead of the English small-font literal,
+      //keeping this screen's computed destination tile.
+      ldy.w #strings.bpp2.noItemsLeftAligned
       getTileIndex(counter, 2); mul(6); add #$03f4; tax
-      lda #$0005; write.bpp2()
+      lda #$0005; write.bpp2(lists.strings.bpp2)
       leave; rtl
     }
   }
