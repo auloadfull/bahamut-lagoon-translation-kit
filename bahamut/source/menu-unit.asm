@@ -24,6 +24,9 @@ namespace unit {
   seek($eeada3); jsl name
   seek($eeadbc); jsl enemy
   seek($eeac38); jsl drawWindowBG3
+  //#7: render the portrait-less enemy name (Alexander) as "UNKNOWN" in the JP sky
+  //accent via the KO Latin menu font (JP's own "UNKNOWN" tiles garble in the KO
+  //font page, so the hook stays but draws the word with append.literal).
   seek($eeac42); string.hook(enemy.unknown)
   seek($eeadf0); jsl level
   seek($eeae29); jsl hp.setCurrent
@@ -84,7 +87,8 @@ namespace unit {
   if KO_LAYOUT_NEAR_TUNED {
     seek($eeaeb2); lda #$01d0     //available position
     seek($eeaee9); lda #$01d0     //unavailable position
-    seek($eead33); lda #$06c2     //position of name+stats for single enemies (bosses usually)
+    seek($eead33); lda #$0642     //position of name+stats for single enemies (bosses usually)
+                                  //#7 Part 3: -$80 = one 8px row up to match JP
   }
 
   //cursor positions
@@ -114,7 +118,7 @@ namespace unit {
 
   allocator.bpp2()
   allocator.create( 8, 4,name)
-  allocator.create( 6, 1,unknown)
+  allocator.create( 7, 1,unknown)  //#7: 'UNKNOWN' is 7 chars
   allocator.create( 5, 4,level)
   allocator.create( 8, 4,class)
   allocator.create(47, 1,jpNumberTileGuard)
@@ -243,10 +247,10 @@ namespace unit {
     //shown for enemies without sprite portrait previews (eg Alexander)
     function unknown {
       enter
-      tilemap.setColorWhite()
-      ldy.w #strings.bpp2.unknown
-      allocator.index(unknown)
-      lda #$0006; write.bpp2(lists.strings.bpp2)
+      tilemap.setColorGreen()   //JP sky/cyan accent
+      ldx #$0000; append.literal("UNKNOWN")
+      lda #$0007; render.small.bpp2()
+      lda #$0007; allocator.index(unknown); write.bpp2()
       leave; rtl
     }
   }
@@ -403,6 +407,11 @@ namespace unit {
   }
 
   function appendEnemyHpInteger4Value {
+    //#7: values past four digits (eg Alexander's hidden 50000 max HP) overflow
+    //integer_4 and rendered as "0"; JP shows "????". Use '?' (character-map: $90,
+    //the JP full-width mark) rather than text.asm's '^' (= $9b "en-question",
+    //Near's narrow Latin glyph) so it matches the JP 8x8 digits beside it.
+    cmp.w #10000; bcc +; append.literal("????"); rtl; +
     cmp.w #1000; bcs render
     append.alignSkip(2)
     cmp.w #100; bcs render
@@ -424,6 +433,9 @@ namespace unit {
     append.literal("/")
     ply
     tya
+    //#7: a hidden maximum HP is stored as 0 (eg Alexander) -> draw "????" like JP.
+    //NOTE: '^' is the game's glyph for '?' (see text.asm hpValue/hpRange); a
+    //literal "?" is not in the menu font and renders as garbage.
     jsl appendEnemyHpInteger4Value
     rtl
   }
@@ -494,6 +506,8 @@ namespace unit {
       appendDragonInteger4()
       append.literal("/")
       lda maximum
+      //#7: a hidden maximum HP is stored as 0 (eg the summoned Alexander) -> draw
+      //"????" like JP instead of a literal 0. Current HP still renders above.
       appendDragonInteger4()
       lda #$0009; render.small.bpp2()
       lda #$0009; allocator.index(playerHpValue); write.bpp2()
@@ -513,6 +527,8 @@ namespace unit {
       appendDragonInteger4()
       append.literal("/")
       lda maximum
+      //#7: hidden maximum HP is stored as 0 (eg the summoned Alexander, which is
+      //typed as a dragon-class unit here) -> draw "????" like JP, not a literal 0.
       appendDragonInteger4()
       lda #$0009; render.small.bpp2()
       lda #$0009; allocator.index(hpRange); inx #3; write.bpp2()
