@@ -551,9 +551,14 @@ namespace status {
   macro writeDragonValue(define name) {
     ldx #$0000
     tilemap.incrementAddress($fffe)
-    append.alignSkip(2)
+    //Per-digit skip: 1 digit +4px, 2 digits +2px (as tuned), 3 digits +0. The
+    //old flat +2px pushed a 3-digit value to 2..26px inside a 24px field, so
+    //its last digit was clipped ("250" drew as "25").
     lda stat
-    cmp.w #10; bcs render{#}
+    cmp.w #100; bcs render{#}
+    cmp.w  #10; bcs twoDigits{#}
+    append.alignSkip(4); bra render{#}
+  twoDigits{#}:
     append.alignSkip(2)
   render{#}:
     lda stat; append.integer_3()

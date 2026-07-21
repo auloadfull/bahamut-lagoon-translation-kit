@@ -282,6 +282,11 @@ namespace party {
     lda $7e8016
     append.integer10()
     lda #$0006; render.small.bpp2()
+    //KO: JP starts this row two tiles further left (aligned under CHAPTER).
+    //Shift the tilemap position once here - the label written after the value
+    //follows the advanced address, so both move together. (X in write.bpp2 is
+    //the VRAM source tile index, not a position: changing it corrupts digits.)
+    tilemap.incrementAddress($fffc)
     lda render.tiles
     ldx #$001e; jsl write.bpp2
     ldy.w #strings.bpp2.piro

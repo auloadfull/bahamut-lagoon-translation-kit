@@ -479,10 +479,24 @@ namespace equipment {
     and #$00ff
     ldx #$0000
     cmp.w #100; bcc +; append.literal(" ??"); bra render; +
-    append.integer_3()
+    //KO: sit the count left of JP's 3-digit right alignment - 1 digit -6px,
+    //2 digits -8px. integer_2 drops one leading space (-8px) and alignSkip
+    //adds part of it back. ($eeb987 is not a pixel x: lowering it made the
+    //counts disappear, so the nudge is done inside the render buffer.)
+    cmp.w #10; bcs countValue
+    append.alignSkip(2)
+  countValue:
+    append.integer_2()
   render:
     lda #$0003; render.small.bpp2()
     lda #$0003; allocator.index(itemCount); write.bpp2()
+    //the trailing blank pad tile covers the window border column; put the
+    //border back, the same way the shop price does (menu-shop.asm costTail).
+    phb; php; rep #$30
+    ldb #$7e
+    lda.w tilemap.address; sub #$0002; tax
+    lda.w #$68f8; sta.w tilemap.location,x
+    plp; plb
     leave; rtl
   }
 }

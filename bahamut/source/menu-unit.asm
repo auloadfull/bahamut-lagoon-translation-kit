@@ -14,9 +14,9 @@ namespace unit {
   constant KO_UNIT_DRAGON_LV_POS              = $0712
   constant KO_UNIT_DRAGON_HP_POS              = $0792
   constant KO_UNIT_DRAGON_MP_POS              = $0812
-  constant KO_UNIT_DRAGON_NAME_ROW_DELTA      = $ff80
-  constant KO_UNIT_DRAGON_RIGHT_LABEL_DELTA   = $ff80
-  constant KO_UNIT_DRAGON_RIGHT_VALUE_DELTA   = $ff7e
+  constant KO_UNIT_DRAGON_NAME_ROW_DELTA      = $0000  //was $ff80 (cancelled Near's +$80 origin)
+  constant KO_UNIT_DRAGON_RIGHT_LABEL_DELTA   = $0000  //was $ff80 (same reason)
+  constant KO_UNIT_DRAGON_RIGHT_VALUE_DELTA   = $fffe  //was $ff7e; keeps its extra -2px
   constant KO_UNIT_DRAGON_PROPERTY_DELTA      = $0002
 
   enqueue pc
@@ -88,7 +88,10 @@ namespace unit {
     seek($eeaeb2); lda #$01d0     //available position
     seek($eeaee9); lda #$01d0     //unavailable position
     seek($eead33); lda #$0642     //position of name+stats for single enemies (bosses usually)
-                                  //#7 Part 3: -$80 = one 8px row up to match JP
+                                  //JP original value; Near had moved it +$80 (8px down), which put
+                                  //every single-boss detail a row low. The dragon detail shares this
+                                  //origin, so its three runtime type-gated deltas below drop the
+                                  //-$80 they used to cancel Near's shift and stay where they were.
   }
 
   //cursor positions
