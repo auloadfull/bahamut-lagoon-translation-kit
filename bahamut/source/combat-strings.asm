@@ -110,11 +110,11 @@ namespace actions {
 
     ldy $28; lda $2a; and #$00ff
     cmp #$00c1; jne redirect
-    cpy #$db4f; bne +; append.literal(" is feigning ignorance."); jmp redirect; +  //"はしらんぷり"
-    cpy #$db56; bne +; append.literal(" is looking away.");       jmp redirect; +  //"はよそみしている"
-    cpy #$db5f; bne +; append.literal(" is worried about this."); jmp redirect; +  //"はこちらをきにしてる"
-    cpy #$db6a; bne +; append.literal(" is cheering you on!");    jmp redirect; +  //"はおうえんしている"
-    cpy #$db74; bne +; append.literal(" passed by.");             jmp redirect; +  //"はとおりすぎた"
+    cpy #$db4f; bne +; lda.w #field.message.dragonFeignsIgnorance; append.stringIndexed(lists.fieldMessages.text); jmp redirect; +  //"はしらんぷり" -> " 딴청을 부린다."
+    cpy #$db56; bne +; lda.w #field.message.dragonLooksAway;       append.stringIndexed(lists.fieldMessages.text); jmp redirect; +  //"はよそみしている" -> " 한눈을 팔고 있다."
+    cpy #$db5f; bne +; lda.w #field.message.dragonWorried;         append.stringIndexed(lists.fieldMessages.text); jmp redirect; +  //"はこちらをきにしてる" -> " 이쪽을 신경 쓴다."
+    cpy #$db6a; bne +; lda.w #field.message.dragonCheers;          append.stringIndexed(lists.fieldMessages.text); jmp redirect; +  //"はおうえんしている" -> " 응원하고 있다."
+    cpy #$db74; bne +; lda.w #field.message.dragonPassedBy;        append.stringIndexed(lists.fieldMessages.text); jmp redirect; +  //"はとおりすぎた" -> " 지나쳐 갔다."
 
   redirect:
     lda.w #render.text >> 0; sta $5e

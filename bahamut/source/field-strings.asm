@@ -31,6 +31,12 @@ namespace message {
   constant scenarioLabel         = 30
   constant turnLabel             = 31
   constant attackEnemyQuestion   = 32
+  //combat "dragon idle action" suffixes, appended after the dragon name
+  constant dragonFeignsIgnorance = 33  //JP はしらんぷり
+  constant dragonLooksAway       = 34  //JP はよそみしている
+  constant dragonWorried         = 35  //JP はこちらをきにしてる
+  constant dragonCheers          = 36  //JP はおうえんしている
+  constant dragonPassedBy        = 37  //JP はとおりすぎた
 }
 
 namespace triggers {
