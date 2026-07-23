@@ -351,20 +351,22 @@ namespace unit {
   }
 
   function appendDragonInteger4Value {
-    // USER_KO_TUNING: pixel-level right alignment for the Near-tuned KO
-    // dragon detail HP/MP rows. JP_BASE leaves this extra padding off.
-    if KO_USER_KO_TUNING {
-      cmp.w #1000; bcs render
-      cmp.w  #100; bcs skip8
-      cmp.w   #10; bcs skip16
-      append.alignSkip(24); bra render
-    skip16:
-      append.alignSkip(16); bra render
-    skip8:
-      append.alignSkip(8)
-    }
+    // Right-align a 1-4 digit value to a fixed 4-tile edge (ones digit on the
+    // same tile as the SP/MP rows) using exact 8px alignSkip padding + integer5.
+    // integer_4 is avoided: its '_' pad glyph is narrower than a digit, so a
+    // 3-digit value landed ~2px left of the 4-digit column. "????" for >=10000
+    // (eg a hidden max HP stored as 50000).
+    cmp.w #10000; bcc +; append.literal("????"); rtl; +
+    cmp.w #1000; bcs render
+    cmp.w #100; bcs skip8
+    cmp.w #10; bcs skip16
+    append.alignSkip(24); bra render
+  skip16:
+    append.alignSkip(16); bra render
+  skip8:
+    append.alignSkip(8)
   render:
-    append.integer_4()
+    append.integer5()
     rtl
   }
 
@@ -502,15 +504,12 @@ namespace unit {
       lda #$0003; allocator.index(playerHpLabel); write.bpp2()
       tilemap.setColorWhite()
       ldx #$0000
-      //4-digit like the dragon/enemy paths (was appendPaddedUnitRange3Value which
-      //capped at 999 -> "???"). appendDragonInteger4 keeps the same 8/16/24 right-
-      //align padding for 1-3 digits, so short-HP layout is unchanged.
+      //appendDragonInteger4 right-aligns 1-4 digit HP to a fixed 4-tile edge with
+      //exact alignSkip padding, so every width shares the SP/MP ones-digit column.
       lda current
       appendDragonInteger4()
       append.literal("/")
       lda maximum
-      //#7: a hidden maximum HP is stored as 0 (eg the summoned Alexander) -> draw
-      //"????" like JP instead of a literal 0. Current HP still renders above.
       appendDragonInteger4()
       lda #$0009; render.small.bpp2()
       lda #$0009; allocator.index(playerHpValue); write.bpp2()

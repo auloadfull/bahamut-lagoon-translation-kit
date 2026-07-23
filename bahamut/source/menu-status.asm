@@ -161,6 +161,30 @@ namespace status {
   done{#}:
   }
 
+  //4-digit sibling of appendStatusInteger3: right-align a 1-4 digit value to a
+  //fixed 4-tile edge with exact 8px alignSkip padding + integer5 (never integer_4,
+  //whose '_' pad glyph is narrower than a digit and left 3-digit HP ~2px short of
+  //the 4-digit column). "????" only for >=10000 (eg a hidden max HP).
+  macro appendStatusInteger4() {
+    cmp.w #10000; bcc valid{#}
+    append.literal("????")
+    bra done{#}
+  valid{#}:
+    cmp.w #1000; bcs render{#}
+    cmp.w #100; bcs skip8{#}
+    cmp.w #10; bcs skip16{#}
+    append.alignSkip(24)
+    bra render{#}
+  skip16{#}:
+    append.alignSkip(16)
+    bra render{#}
+  skip8{#}:
+    append.alignSkip(8)
+  render{#}:
+    append.integer5()
+  done{#}:
+  }
+
   macro appendStatusInteger7() {
     //Value is 32-bit in Y:A (high:low), right-aligned in the 7-tile field.
     //The old code ran integer5 on the low word only, so a value past five
@@ -388,15 +412,15 @@ namespace status {
       lda #$0003; allocator.index(hpRange); write.bpp4()
       tilemap.setColorWhite()
       ldx #$0000
-      //4-digit HP like the dragon path below (was appendStatusInteger3 which
-      //capped at 999 -> "???" for 4-digit player HP). Same 9-tile field.
+      //Right-align HP with exact alignSkip padding (appendStatusInteger4) so 1-4
+      //digit values share the same ones-digit column as the SP/MP rows. integer_4
+      //left 3-digit HP ~2px short of the 4-digit column because its '_' pad is
+      //narrower than a digit.
       lda current
-      cmp.w #10000; bcc +; append.literal("????"); bra ++; +
-      append.integer_4(); +
+      appendStatusInteger4()
       append.literal("/")
       lda maximum
-      cmp.w #10000; bcc +; append.literal("????"); bra ++; +
-      append.integer_4(); +
+      appendStatusInteger4()
       lda #KO_STATUS_RANGE_VALUE_WIDTH; render.small.bpp4()
       lda #KO_STATUS_RANGE_VALUE_WIDTH; allocator.index(hpRange); inx #KO_STATUS_RANGE_VALUE_OFFSET_TILES; write.bpp4()
       leave; rtl

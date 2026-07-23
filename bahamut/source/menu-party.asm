@@ -280,12 +280,28 @@ namespace party {
     enter; ldx #$0000
     lda $7e8018; and #$00ff; tay
     lda $7e8016
+    //Right-align the money in a fixed 6-digit field so the "피로" label stays put
+    //and the number grows leftward: leading alignSkip = (6 - digits)*8px, then
+    //integer10. render.tiles then stays 6 (rightmost digit always on tile 6), so
+    //the label written after it does not shift. jmp keeps the digit branches
+    //clear of the relative-branch range.
+    cpy.w #$0002; bcc +; jmp pr6; +            //Y>=2 (>=131072) -> 6+ digits, no skip
+    cpy.w #$0001; bne prLo                      //Y==0 -> low-word compares below
+    cmp.w #$86a0; bcc +; jmp pr6; +             //Y==1, >=100000 -> 6 digits
+    append.alignSkip(8); jmp pr6                //Y==1, 65536..99999 -> 5 digits
+  prLo:
+    cmp.w #10000; bcc +; append.alignSkip(8);  jmp pr6; +
+    cmp.w  #1000; bcc +; append.alignSkip(16); jmp pr6; +
+    cmp.w   #100; bcc +; append.alignSkip(24); jmp pr6; +
+    cmp.w    #10; bcc +; append.alignSkip(32); jmp pr6; +
+    append.alignSkip(40)
+  pr6:
     append.integer10()
     lda #$0006; render.small.bpp2()
-    //KO: JP starts this row two tiles further left (aligned under CHAPTER).
-    //Shift the tilemap position once here - the label written after the value
-    //follows the advanced address, so both move together. (X in write.bpp2 is
-    //the VRAM source tile index, not a position: changing it corrupts digits.)
+    //KO user tuning: shift the whole piro row (the value and the label both follow
+    //this tilemap.address) left 2 tiles / 16px. tilemap.address is byte-addressed
+    //(2 units per tile), so -2 tiles = -4 units = $fffc.
+    //(X in write.bpp2 is the VRAM source tile index, not a position.)
     tilemap.incrementAddress($fffc)
     lda render.tiles
     ldx #$001e; jsl write.bpp2
