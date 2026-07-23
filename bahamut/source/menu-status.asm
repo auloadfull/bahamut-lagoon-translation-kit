@@ -194,13 +194,27 @@ namespace status {
   }
 
   macro writeCompactLevelMagicBPP4(define target) {
-    // lists.levelsMagic is icon, blank, digit; status detail wants icon, digit, blank.
+    // levelsMagic bpp4 keeps a two-digit slot: single-digit levels are
+    // [icon, blank, digit], two-digit are [icon, tens, ones]. The status detail
+    // wants the digit hugging the icon, so reorder to [icon, digit, blank] for a
+    // single digit - but NOT for two digits, or the tens/ones swap ("10" -> "01").
+    lda levelValue; cmp.w #10; bcc single{#}; jmp twoDigits{#}
+  single{#}:
     lda levelValue; mul(3); tay
     lda #$0001; allocator.index({target}); write.bpp4(lists.levelsMagic.bpp4)
     lda levelValue; mul(3); add #$0002; tay
     lda #$0001; allocator.index({target}); inx #1; write.bpp4(lists.levelsMagic.bpp4)
     lda levelValue; mul(3); add #$0001; tay
     lda #$0001; allocator.index({target}); inx #2; write.bpp4(lists.levelsMagic.bpp4)
+    jmp done{#}
+  twoDigits{#}:
+    lda levelValue; mul(3); tay
+    lda #$0001; allocator.index({target}); write.bpp4(lists.levelsMagic.bpp4)
+    lda levelValue; mul(3); add #$0001; tay
+    lda #$0001; allocator.index({target}); inx #1; write.bpp4(lists.levelsMagic.bpp4)
+    lda levelValue; mul(3); add #$0002; tay
+    lda #$0001; allocator.index({target}); inx #2; write.bpp4(lists.levelsMagic.bpp4)
+  done{#}:
   }
 
   //A => player or dragon name
@@ -752,7 +766,9 @@ namespace status {
       enter
       and #$00ff; sta costValue
       lda nameID; cmp.w #KO_STATUS_UNUSED_TECHNIQUE_ID; bne +; jmp empty; +
-      tilemap.setColorWhite()
+      //#5: inherit the game's row palette ($001862) like the name/level do, so
+      //the MP cost greys out with the technique name when it cannot be used.
+      //Forcing white here left the cost white while the name was greyed.
       lda costValue; and #$00ff; mul(3); tay
       lda #$0003; allocator.index(techniqueItemCost); write.bpp2(lists.stats.bpp2)
       leave; rtl
