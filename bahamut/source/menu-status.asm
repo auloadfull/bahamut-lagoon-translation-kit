@@ -162,26 +162,42 @@ namespace status {
   }
 
   macro appendStatusInteger7() {
-    cmp.w #10000; bcc +; jmp fiveDigits{#}; +
-    cmp.w #1000; bcc +; jmp fourDigits{#}; +
-    cmp.w #100; bcc +; jmp threeDigits{#}; +
-    cmp.w #10; bcc +; jmp twoDigits{#}; +
+    //Value is 32-bit in Y:A (high:low), right-aligned in the 7-tile field.
+    //The old code ran integer5 on the low word only, so a value past five
+    //digits showed just its low 16 bits (eg EXP 1016590 -> 33550). Count the
+    //digits across the full 32-bit value and render with integer10.
+    cpy.w #$000f; bcc c6{#}; bne j7{#}; cmp.w #$4240; bcs j7{#}   //>= 1000000 -> 7
+  c6{#}:
+    cpy.w #$0001; bcc c5{#}; bne j6{#}; cmp.w #$86a0; bcs j6{#}   //>= 100000 -> 6
+  c5{#}:
+    cpy.w #$0000; beq lo{#}; jmp fiveDigits{#}                    //65536-99999 -> 5
+  lo{#}:
+    cmp.w #10000; bcc n4{#}; jmp fiveDigits{#}
+  n4{#}:
+    cmp.w #1000; bcc n3{#}; jmp fourDigits{#}
+  n3{#}:
+    cmp.w #100; bcc n2{#}; jmp threeDigits{#}
+  n2{#}:
+    cmp.w #10; bcc oneDigit{#}; jmp twoDigits{#}
+  j7{#}:
+    jmp sevenDigits{#}
+  j6{#}:
+    jmp sixDigits{#}
   oneDigit{#}:
-    append.alignSkip(48)
-    bra render{#}
+    append.alignSkip(48); jmp render{#}
   twoDigits{#}:
-    append.alignSkip(40)
-    bra render{#}
+    append.alignSkip(40); jmp render{#}
   threeDigits{#}:
-    append.alignSkip(32)
-    bra render{#}
+    append.alignSkip(32); jmp render{#}
   fourDigits{#}:
-    append.alignSkip(24)
-    bra render{#}
+    append.alignSkip(24); jmp render{#}
   fiveDigits{#}:
-    append.alignSkip(16)
+    append.alignSkip(16); jmp render{#}
+  sixDigits{#}:
+    append.alignSkip(8); jmp render{#}
+  sevenDigits{#}:
   render{#}:
-    append.integer5()
+    append.integer10()
   }
 
   macro writeCompactLevelMagicBPP2(define target) {
