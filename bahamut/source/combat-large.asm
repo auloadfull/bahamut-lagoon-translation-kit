@@ -310,10 +310,12 @@ function failed {
   //c1c09a  plb
   //c1c09b  bra $c0b6
   //------
+  //KO: "꽝！"
   function main {
     enter; ldx #$0000; append.redirect(target); ldx #$0000
     append.alignCenter(text)
-    append.literal(text, "Failed!")
+    append.koGlyph(text, $03cd)  //꽝
+    append.koGlyph(text, $0038)  //！
     leave; rtl
   }
 }
@@ -342,10 +344,12 @@ function alterEgo {
   //c1b52c  plb
   //c1b52d  jsr $b4e6
   //------
+  //KO: "분신"
   function main {
     enter; ldx #$0000; append.redirect(target); ldx #$0000
     append.alignCenter(text)
-    append.literal(text, "Alter Ego")
+    append.koGlyph(text, $0186)  //분
+    append.koGlyph(text, $003d)  //신
     leave; rtl
   }
 }

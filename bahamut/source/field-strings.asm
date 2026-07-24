@@ -434,53 +434,29 @@ namespace obtainedItems {
 
   //XL => item
   //XH => count
+  //KO: "{아이템}을/를 입수했습니다。" — Korean has no singular/plural article
+  //agreement, so only the 을/를 particle depends on the item name.
   function main {
     variable(2, item)
-    variable(2, count)
-    variable(64, name)
 
     enter
     txa; and #$007f; sta item
-    txa; xba; and #$00ff; sta count
-    ldx #$0000; append.literal(output, "Obtained ")
-    lda count; cmp #$0001; jne pluralCount
-
-  singularCount:
-    append.literal(output, "a")
-    phx; ldx #$0000; lda item; append.stringIndexed(name, lists.items.text); plx
-    lda name; and #$00ff
-    cmp.w #'A'; bne +; append.literal(output, "n"); +
-    cmp.w #'E'; bne +; append.literal(output, "n"); +
-    cmp.w #'I'; bne +; append.literal(output, "n"); +
-    cmp.w #'O'; bne +; append.literal(output, "n"); +
-    cmp.w #'U'; bne +; append.literal(output, "n"); +
-    jmp itemName
-
-  pluralCount:
-    append.integer3(output)
-
-  itemName:
-    append.literal(output, " "); +
+    ldx #$0000
     lda item; append.stringIndexed(output, lists.items.text)
-    lda count; cmp #$0001; jne pluralName
-
-  singularName:
-    append.literal(output, ".")
-    leave; rtl
-
-  pluralName:
-    lda output-1,x; and #$00ff
-    cmp.w #'s'; jeq pluralNameS
-    cmp.w #'y'; jeq pluralNameY
-    append.literal(output, "s.")
-    leave; rtl
-
-  pluralNameS:
-    append.literal(output, "es.")
-    leave; rtl
-
-  pluralNameY:
-    dex; append.literal(output, "ies.")
+    //조사 선택: 0 = 받침 없음 → 를, 1/2 = 받침 → 을 (ㄹ 예외 없음)
+    phx; lda item; tax; lda.l lists.items.particles,x; plx; and #$00ff
+    beq +
+    append.koGlyph(output, $0042)  //을
+    bra ++
+  +;append.koGlyph(output, $0020)  //를
+  +;append.koGlyph(output, $0000)  //(공백)
+    append.koGlyph(output, $0072)  //입
+    append.koGlyph(output, $0023)  //수
+    append.koGlyph(output, $008b)  //했
+    append.koGlyph(output, $0059)  //습
+    append.koGlyph(output, $0003)  //니
+    append.koGlyph(output, $0025)  //다
+    append.koGlyph(output, $0077)  //。
     leave; rtl
   }
 }
@@ -674,23 +650,28 @@ namespace dragonEvolved {
   //c0a7bf  jsr $a942      ;append to string
   //------
   //A => dragon type
+  //KO: "{종족}(으)로 진화했습니다。" — Korean puts the type first, so the
+  //particle is picked from the type name instead of an English article.
   function main {
     variable(2, type)
-    variable(64, string)
 
     enter
     and #$00ff; sta type
-    ldx #$0000; append.stringIndexed(string, lists.dragons.text)
-    ldx #$0000; append.literal(output, "Evolved into a")
-    lda string; and #$00ff
-    cmp.w #'A'; bne +; append.literal(output, "n"); +
-    cmp.w #'E'; bne +; append.literal(output, "n"); +
-    cmp.w #'I'; bne +; append.literal(output, "n"); +
-    cmp.w #'O'; bne +; append.literal(output, "n"); +
-    cmp.w #'U'; bne +; append.literal(output, "n"); +
-    append.literal(output, " ")
+    ldx #$0000
     lda type; append.stringIndexed(output, lists.dragons.text)
-    append.literal(output, ".")
+    //조사 선택: 1 = 받침(ㄹ 제외) → 으로, 0/2 → 로
+    phx; lda type; tax; lda.l lists.dragons.particles,x; plx; and #$00ff
+    cmp #$0001; bne +
+    append.koGlyph(output, $0075)  //으
+  +;append.koGlyph(output, $0018)  //로
+    append.koGlyph(output, $0000)  //(공백)
+    append.koGlyph(output, $0104)  //진
+    append.koGlyph(output, $00af)  //화
+    append.koGlyph(output, $008b)  //했
+    append.koGlyph(output, $0059)  //습
+    append.koGlyph(output, $0003)  //니
+    append.koGlyph(output, $0025)  //다
+    append.koGlyph(output, $0077)  //。
     leave; rtl
   }
 }
@@ -710,13 +691,30 @@ namespace drowningWarning {
   //c08ff1  sta $072d   ;store it in the string
   //------
   //A => # of turns before drowning (starting from '0')
+  //KO: "여기 있으면 물에 빠집니다。（N）" — keeps the JP trailing paren form
+  //instead of the English sentence, so the turn count stays where JP put it.
   function main {
     enter; ldx #$0000
-    append.literal(output, "Will drown in ")
-    and #$00ff; sub.w #'0'; append.integer1(output)
-    append.literal(output, " more turn")
-    cmp #$0001; beq +; append.literal(output, "s"); +
-    append.literal(output, ".")
+    and #$00ff; sub.w #'0'; pha
+    append.koGlyph(output, $0014)  //여
+    append.koGlyph(output, $0081)  //기
+    append.koGlyph(output, $0000)  //(공백)
+    append.koGlyph(output, $0094)  //있
+    append.koGlyph(output, $0075)  //으
+    append.koGlyph(output, $006a)  //면
+    append.koGlyph(output, $0000)  //(공백)
+    append.koGlyph(output, $0060)  //물
+    append.koGlyph(output, $004a)  //에
+    append.koGlyph(output, $0000)  //(공백)
+    append.koGlyph(output, $026f)  //빠
+    append.koGlyph(output, $02a4)  //집
+    append.koGlyph(output, $0003)  //니
+    append.koGlyph(output, $0025)  //다
+    append.koGlyph(output, $0077)  //。
+    append.koGlyph(output, $0148)  //（
+    pla
+    append.runtimeInteger5(output, lists.fieldMessages.text, message.digit0)
+    append.koGlyph(output, $014b)  //）
     leave; rtl
   }
 }
@@ -732,9 +730,18 @@ namespace drowned {
   //c08fd9  lda #$22    ;string length
   //c08fdb  jsr $a113   ;print the string
   //------
+  //KO: "물에 빠졌습니다。"
   function main {
     enter; ldx #$0000
-    append.literal(output, "Drowned.")
+    append.koGlyph(output, $0060)  //물
+    append.koGlyph(output, $004a)  //에
+    append.koGlyph(output, $0000)  //(공백)
+    append.koGlyph(output, $026f)  //빠
+    append.koGlyph(output, $013b)  //졌
+    append.koGlyph(output, $0059)  //습
+    append.koGlyph(output, $0003)  //니
+    append.koGlyph(output, $0025)  //다
+    append.koGlyph(output, $0077)  //。
     leave; rtl
   }
 }
@@ -751,9 +758,24 @@ function moveDestination {
   //c09330  lda #$22    ;string length
   //c09332  jsr $a113   ;print the string
   //------
+  //KO: "이동할 곳을 지정해 주세요。"
   function main {
     enter; ldx #$0000
-    append.literal(output, "Please specify the move destination.")
+    append.koGlyph(output, $0016)  //이
+    append.koGlyph(output, $00f9)  //동
+    append.koGlyph(output, $002b)  //할
+    append.koGlyph(output, $0000)  //(공백)
+    append.koGlyph(output, $0177)  //곳
+    append.koGlyph(output, $0042)  //을
+    append.koGlyph(output, $0000)  //(공백)
+    append.koGlyph(output, $005b)  //지
+    append.koGlyph(output, $004b)  //정
+    append.koGlyph(output, $004c)  //해
+    append.koGlyph(output, $0000)  //(공백)
+    append.koGlyph(output, $007d)  //주
+    append.koGlyph(output, $006c)  //세
+    append.koGlyph(output, $0033)  //요
+    append.koGlyph(output, $0077)  //。
     leave; rtl
   }
 }
@@ -769,9 +791,27 @@ function gameOverRetry {
   //c0a1b6  lda #$20    ;string length
   //c0a1b8  jsr $a113   ;print the string
   //------
+  //KO: "챕터 처음부터 다시 하시겠습니까？"
   function main {
     enter; ldx #$0000
-    append.literal(output, "Try again from the beginning?")
+    append.koGlyph(output, $03cc)  //챕
+    append.koGlyph(output, $00ff)  //터
+    append.koGlyph(output, $0000)  //(공백)
+    append.koGlyph(output, $0080)  //처
+    append.koGlyph(output, $0064)  //음
+    append.koGlyph(output, $00fe)  //부
+    append.koGlyph(output, $00ff)  //터
+    append.koGlyph(output, $0000)  //(공백)
+    append.koGlyph(output, $0025)  //다
+    append.koGlyph(output, $0036)  //시
+    append.koGlyph(output, $0000)  //(공백)
+    append.koGlyph(output, $0011)  //하
+    append.koGlyph(output, $0036)  //시
+    append.koGlyph(output, $013e)  //겠
+    append.koGlyph(output, $0059)  //습
+    append.koGlyph(output, $0003)  //니
+    append.koGlyph(output, $005e)  //까
+    append.koGlyph(output, $001d)  //？
     leave; rtl
   }
 }
