@@ -106,7 +106,39 @@ namespace actions {
 
     ldx #$0000
     append.alignCenter()
+    //KO: a default dragon name is stored as English base56, so append.name draws
+    //it as "Ice Dragon". Try the Korean display alias first (carry set = it wrote
+    //the name); fall back to the base56 name for player-renamed dragons. PLA does
+    //not touch carry, so A is restored for that fallback. Same idiom as
+    //combat-large.asm's name renderer.
+    pha
+    jsl koName.appendRenderTextLargeNameAlias
+    pla
+    bcc noNameAlias
+    //The alias writes its own $ff terminal and steps X past it, which is right
+    //when the name is the whole string (combat-large). Here an action suffix
+    //follows, so back up onto the terminal - append.* expects X to point at it
+    //so the next append overwrites it. Without this the suffix lands after the
+    //terminator and the renderer stops at the name.
+    dex
+    //Topic particle (JP は). Only a default name reaches here, so the batchim is
+    //known from the name index: 아이스드래곤(3) and 몰텐(5) end in a consonant and
+    //take 은, the other eight take 는. A renamed dragon takes the base56 path
+    //below and gets no particle - its batchim is not knowable at this point.
+    //Compare the way the alias itself does: it masks with #$00ff internally, so
+    //the caller's high byte is not guaranteed clear. Without this mask the
+    //compares never match and every name falls through to 는.
+    and #$00ff
+    cmp.w #$0003; beq nameParticleEun
+    cmp.w #$0005; beq nameParticleEun
+    append.koGlyph($001e)  //는
+    bra nameDone
+  nameParticleEun:
+    append.koGlyph($001b)  //은
+    bra nameDone
+  noNameAlias:
     append.name()
+  nameDone:
 
     ldy $28; lda $2a; and #$00ff
     cmp #$00c1; jne redirect
