@@ -208,8 +208,33 @@ namespace shop {
       tilemap.setColorWhite()
       lda piroUpper; and #$00ff; tay
       lda piroLower
-      ldx #$0000; append.alignRight(); append.integer_8()
-      jsl padTrailingSpace; jsl padTrailingSpace
+      ldx #$0000
+      //Right-align the money to a fixed 7-tile edge (56px) with exact leading
+      //alignSkip + integer10. The old integer_8 filled all 8 tiles, tripping
+      //align.right's give-up path (left-align), so the number drifted per digit
+      //count by the width of its narrow '_' pad. Small-font digits are 8px, so
+      //(7 - digits) tiles of leading skip land every width on one right edge.
+      cpy.w #$000f; bcc chk6; bne wide7; cmp.w #$4240; bcs wide7
+    chk6:
+      cpy.w #$0001; bcc lo; bne d6; cmp.w #$86a0; bcs d6
+      append.alignSkip(16); jmp aligned   //Y==1, 65536..99999 -> 5 digits
+    d6:
+      append.alignSkip(8); jmp aligned    //>=100000 -> 6 digits
+    wide7:
+      jmp aligned                          //>=1000000 -> 7+ digits, no skip
+    lo:
+      cmp.w #10000; bcc n4; append.alignSkip(16); jmp aligned
+    n4:
+      cmp.w #1000; bcc n3; append.alignSkip(24); jmp aligned
+    n3:
+      cmp.w #100; bcc n2; append.alignSkip(32); jmp aligned
+    n2:
+      cmp.w #10; bcc n1; append.alignSkip(40); jmp aligned
+    n1:
+      append.alignSkip(48)
+    aligned:
+      append.integer10()
+      jsl padTrailingSpace   //keep the field a full 8 tiles wide (blank last tile)
       lda #$0008; render.small.bpp2()
       allocator.index(piroAmount); write.bpp2()
       leave; rtl
@@ -306,6 +331,9 @@ namespace shop {
     tilemap.setColorWhite()
     ldx #$0000
     lda cost
+    cmp.w #10000; bcc +; jmp skipDone; +  //5-digit price: no skip; digits fill tiles
+                                //0-4 and end at 40px like the shorter widths, so the
+                                //last digit is not overwritten by the border pad tile.
     cmp.w #1000; bcs skip4
     cmp.w  #100; bcs skip3
     cmp.w   #10; bcs skip2
