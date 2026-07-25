@@ -1,11 +1,11 @@
-Automated Turret
-Mysterious Light Beam
-Spikes
-Trap
-Sandstorm
-Pitfall
-Flood
-Guard Device
-Silent Voice
-Bionics
-Nightmare 99
+자동포대
+괴광선
+가시
+트랩
+모래폭풍
+함정
+홍수
+경계장치
+사일런트보이스
+바이오닉스
+나이트메어９９
